@@ -1,4 +1,4 @@
 from .ALPHAVANTAGE import *
-from .HTTP.httpFunctions import *
-from .MONGODB.mongodbFunctions import *
+from .HTTP import *
+from .MONGODB import *
 from .TWELVEDATAAPI import *

@@ -1,5 +1,5 @@
 from src.system.logging_config import logger
-from  src.lib import HttpFunctions
+from ..HTTP import HttpFunctions
 
 # Configure the logger
 

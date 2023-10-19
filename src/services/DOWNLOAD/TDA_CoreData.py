@@ -8,6 +8,8 @@ from requests import Response
 # Configure the logger
 
 
+
+
 class TDA_CoreData:
     """
     Esta función implementa la lógica detrás de la descarga los "CoreData"
@@ -22,42 +24,27 @@ class TDA_CoreData:
 
         :return: Un diccionario con los datos descargados.
         """
-        conn = None
+
         try:
             # Obtener todos los registros de descarga del activo seleccionado
-            conn = MongoDbFunctions(
-                DATABASE["host"],
-                DATABASE["port"],
-                DATABASE["username"],
-                DATABASE["password"],
-                DATABASE["dbname"],
-                "DownloadRegistry",
-            )
-
-            logger.info(f"Descargando registros")
-            DownloadRegistries = conn.findAll(sort=True, sortField="priority")
+            config = TDA_CoreData.__getConfig()
+            timestamps = config["timestamps"]
+            assets = config["assets"]
 
             # Más lógica de descarga aquí...
-            for registry in DownloadRegistries:
-                id = registry.get("_id")
-                timespan = registry.get("timespan")
-                if timespan == "1min":
-                    logger.info(
-                        f"La funcionalidad no se ha implentado para timespan {timespan}"
-                    )
-                    continue
-                logger.info(f"Descargando registros con timespanp {timespan}")
-
-                for asset in registry["descargas_pendientes"]:
+            for timestamp in timestamps:
+                logger.info("Downloading data for %s", timestamp)
+                for asset in assets:
+                    logger.info("Downloading %s data", asset)
                     # Añadir check para ver si ya está
-                    res = TDA_CoreData.__findAsset(asset, timespan)
+                    update = False
+                    res = TDA_CoreData.__findAsset(asset, timestamp)
                     if res[0]:
-                        TDA_CoreData.__eliminateFromRegistry(id, asset)
-                        continue
-                    res = TDA_CoreData.__downloadAsset(id, asset, timespan)
+                        update = True
+                    if not update:
+                        res = TDA_CoreData.__downloadAsset(id, asset, timestamp, update)
                     if not res[0] and res[1] == "Llamadas diarias agotadas":
                         return (False, "Llamadas diarias agotadas")
-
                     invalid_item = False
                     try:
                         temporal_res = res[1].json()
@@ -67,25 +54,20 @@ class TDA_CoreData:
                         )
                     except Exception as e:
                         pass
-                    if res[0] or invalid_item:
-                        TDA_CoreData.__eliminateFromRegistry(id, asset)
-                if not registry["descargas_pendientes"]:
-                    logger.info(f"No hay registros de con timespan {timespan}")
-                logger.info(f"Descargados todos los registros con timespan {timespan}")
+                    if res[0]:
+                        logger.info("Asset downloaded successfully")
+                        
 
-            conn.close()
+
+      
         except Exception as e:
-            if conn:
-                conn.close()
-
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
-    def __downloadAsset(id, asset, interval):
-        conn = None
+    def __downloadAsset(id, asset, interval,update):
+  
         try:
-            if interval == "60min":
-                interval = "1h"
+
             # Obtener la configuración de la API
 
             # Descargar datos
@@ -147,8 +129,7 @@ class TDA_CoreData:
             logger.info("%s data downloaded successfully", str(asset))
             return (True, asset)
         except Exception as e:
-            if conn:
-                conn.close()
+
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
