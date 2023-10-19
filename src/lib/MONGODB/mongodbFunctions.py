@@ -203,7 +203,7 @@ class MongoDbFunctions:
                 return data
             return self.collection.find_one(query)
 
-    def findByMultipleFields(self, fields, exact_match=True, get_all=False):
+    def findByMultipleFields(self, fields, exact_match=True, get_all=False,custom=False):
         """
         Find documents in the collection based on multiple fields and their values.
 
@@ -217,12 +217,15 @@ class MongoDbFunctions:
             list or dict: Depending on the 'get_all' parameter, either a list of matching documents or
                         the first matching document found. Returns None if no matches are found.
         """
-        query = {}
-        for field, value in fields.items():
-            if exact_match:
-                query[field] = value
-            else:
-                query[field] = {"$regex": value, "$options": "i"}
+        if custom:
+            query = fields
+        else:
+            query = {}
+            for field, value in fields.items():
+                if exact_match:
+                    query[field] = value
+                else:
+                    query[field] = {"$regex": value, "$options": "i"}
 
         if get_all:
             return list(self.collection.find(query))
@@ -254,8 +257,10 @@ class MongoDbFunctions:
             id (str): The ObjectId string of the document to update.
             data (dict): The updated data to be applied.
         """
+        logger.info(f"Updating document with id {id}")
         query = {"_id": ObjectId(id)}
         self.collection.update_one(query, {"$set": data})
+        logger.info("Document updated")
 
     def updateByField(self, field, value, data, exact_match=True):
         """

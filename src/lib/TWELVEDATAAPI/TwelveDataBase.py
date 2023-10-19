@@ -34,7 +34,6 @@ class TwelveDataBase:
             final_url = TwelveDataBase.url + endpoint + "?" + "&".join(final_parameters)
         else:
             final_url = TwelveDataBase.url + endpoint
-            
-        logger.info("Performing request to %s", final_url)    
+
         
         return HttpFunctions.httpRequest("GET", final_url)

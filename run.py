@@ -1,7 +1,7 @@
-from src import *
-from src.system.logging_config import logger
+from src import main
 
-TDA_CoreData.downloadAsset()
+if __name__ == "__main__":
+    main()
 
 
 

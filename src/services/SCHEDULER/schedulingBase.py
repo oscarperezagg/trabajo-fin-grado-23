@@ -18,5 +18,4 @@
 
 # Schedule para actualizar los datos de acciones
 
-
 # Schedule que busca activos de mismos parametros y elimina duplicados

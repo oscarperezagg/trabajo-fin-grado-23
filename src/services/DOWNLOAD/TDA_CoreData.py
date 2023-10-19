@@ -8,8 +8,6 @@ from requests import Response
 # Configure the logger
 
 
-
-
 class TDA_CoreData:
     """
     Esta función implementa la lógica detrás de la descarga los "CoreData"
@@ -24,11 +22,11 @@ class TDA_CoreData:
 
         :return: Un diccionario con los datos descargados.
         """
-
+        logger.info("[START] Downloading assets with Twelve Data API")
         try:
             # Obtener todos los registros de descarga del activo seleccionado
             config = TDA_CoreData.__getConfig()
-            timestamps = config["timestamps"]
+            timestamps = config["timestamps"].keys()
             assets = config["assets"]
 
             # Más lógica de descarga aquí...
@@ -56,18 +54,14 @@ class TDA_CoreData:
                         pass
                     if res[0]:
                         logger.info("Asset downloaded successfully")
-                        
 
-
-      
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
+        logger.info("[END] Downloading assets with Twelve Data API")
 
-    def __downloadAsset(id, asset, interval,update):
-  
+    def __downloadAsset(id, asset, interval, update):
         try:
-
             # Obtener la configuración de la API
 
             # Descargar datos
@@ -129,10 +123,92 @@ class TDA_CoreData:
             logger.info("%s data downloaded successfully", str(asset))
             return (True, asset)
         except Exception as e:
-
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
+    @staticmethod
+    def updateAssets():
+        """
+        Esta función activos de cualquier tipo
+
+        :return: Un diccionario con los datos descargados.
+        """
+        logger.info("[START] Updating assets with Twelve Data API")
+        try:
+            # Obtener todos los registros de descarga del activo seleccionado
+            config = TDA_CoreData.__getConfig()
+            timestamps = config["timestamps"]
+            assets = config["assets"]
+            for timestamp in timestamps.keys():
+                res = TDA_CoreData.__updatable_assets(timestamp, assets)
+                if not res[0]:
+                    break
+                for asset in res[1]:
+                    is_there_more_time = TDA_CoreData.__is_there_more_time(
+                        asset, timestamps
+                    )
+                    if is_there_more_time[0]:
+
+                        res = TDA_CoreData.__UpdateAsset(asset["symbol"], timestamp,asset)
+                        
+                        
+        except Exception as e:
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __UpdateAsset(asset, interval,complete_asset):
+        try:
+            # Obtener la configuración de la API
+
+            # Descargar datos
+            finalDataSet = {}
+            moreData = True
+            earliestTimestamp = None
+            start_date = complete_asset["data"][0]["datetime"]
+
+            while moreData:
+                # Comprobar si hay llamadas disponibles
+                check = TDA_CoreData.__anotherCall()
+                if not check[0]:
+                    return check
+
+                response = TDA_CoreData.__update_assetDataRange(
+                    asset, interval, start_date, finalDataSet
+                )
+                
+                if not response[0]:
+                    return response
+
+                if isinstance(response[1], Response):
+                    return (False, response[1])
+
+
+                finalDataSet["data"] = response[1]["data"]
+                
+                moreData = response[2]
+                if moreData and response[1]["data"]:
+                    start_date = response[1]["data"][0]["datetime"]
+                
+                
+            # Editamos el Asset
+            if not finalDataSet["data"]:
+                logger.error("No hay datos que actualizar")
+                return (False, "No hay datos que actualizar")
+            
+            tempData = complete_asset["data"]
+            complete_asset["data"] = finalDataSet["data"]
+            complete_asset["data"].extend(tempData)
+            # Subir datos
+            res = TDA_CoreData.__updateAssetData(complete_asset)
+            if not res[0]:
+                return res
+            # Fin
+            logger.info("%s data downloaded successfully", str(asset))
+            return (True, asset)
+        except Exception as e:
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+    
     def __getConfig():
         conn = None
         try:
@@ -290,6 +366,55 @@ class TDA_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
+    def __update_assetDataRange(asset, interval, start_date=None, parseData={}):
+        try:
+            logger.info(
+                "Downloading asset data for %s with interval %s", asset, interval
+            )
+
+            params = {
+                "symbol": asset,
+                "interval": interval,
+                "outputsize": "5000",
+                "previous_close": "true",
+                "start_date":start_date,
+                "apikey": TWELVE_DATA_API_KEY,
+            }
+
+            response = CoreData.time_series_intraday(**params)
+
+            if not response[0]:
+                logger.error(
+                    "Failed to download data for %s with interval %s", asset, interval
+                )
+                return (False, response)
+
+            temporalDataSet = response[1].json()
+
+            if temporalDataSet["status"] == "error":
+                logger.error(
+                    "Received an error response: %s",
+                    temporalDataSet.get("message", "Unknown error"),
+                )
+                return response
+
+            moreData = True if len(temporalDataSet["values"]) > 5000 else False
+            
+            if parseData == {}:
+                parseData["data"] = temporalDataSet["values"][:-1]
+            else:
+                tempData = parseData["data"]
+                parseData["data"] = temporalDataSet["values"][:-1]
+                parseData["data"].extend(tempData)
+
+            logger.info(
+                "Data successfully downloaded for %s with interval %s", asset, interval
+            )
+            return (True, parseData,moreData)
+        except Exception as e:
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+    
     def __oneMoreCall():
         conn = None
         try:
@@ -335,6 +460,31 @@ class TDA_CoreData:
             assetData["last_modified"] = datetime.now()
 
             conn.insert(dict(assetData))
+            logger.info("Asset uploaded successfully to the database")
+            conn.close()
+            return (True, "")
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+        
+    def __updateAssetData(assetData):
+        conn = None
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "CoreData",
+            )
+            logger.info("Uploading data for %s", assetData["symbol"])
+            assetData["last_modified"] = datetime.now()
+            id = assetData["_id"]
+            del assetData["_id"]
+            conn.updateById(id,dict(assetData))
             logger.info("Asset uploaded successfully to the database")
             conn.close()
             return (True, "")
@@ -445,3 +595,77 @@ class TDA_CoreData:
                 conn.close()
             logger.error("An error occurred: %s", str(e))
             return (False, e)
+
+    @staticmethod
+    def __updatable_assets(interval, assets):
+        conn = None
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "CoreData",
+            )
+
+            logger.info("Obteniendo configuración de la API Twelve Data")
+            fields = {
+                "$and": [
+                    {"symbol": {"$in": assets}},
+                    {"interval": interval},
+                ]
+            }
+            updatable_stocks = conn.findByMultipleFields(
+                fields=fields, custom=True, get_all=True
+            )
+            conn.close()
+            if updatable_stocks:
+                logger.info("Configuración obtenida")
+                return (True, updatable_stocks)
+            else:
+                logger.error("No hay activos que actualizar")
+                return (False, "No hay activos que actualizar")
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __is_there_more_time(asset_data, timestamps):
+        interval = asset_data["interval"]  # 2023-10-19 13:05:00
+        try:
+            last_datetime = datetime.strptime(
+                asset_data["data"][0]["datetime"], "%Y-%m-%d"
+            )
+        except Exception as e:
+            last_datetime = datetime.strptime(
+                asset_data["data"][0]["datetime"], "%Y-%m-%d %H:%M:%S"
+            )
+
+        time = timestamps[interval][0]
+        unit = timestamps[interval][1]
+
+        fecha_actual = datetime.now()
+
+        # Utiliza la variable 'unit' en lugar de 'days' en timedelta
+        if unit == "days":
+            logger.info("La unidad es días")
+            fecha_despues = last_datetime + timedelta(days=time)
+        elif unit == "hours":
+            logger.info("La unidad es horas")
+            fecha_despues = last_datetime + timedelta(hours=time)
+        elif unit == "minutes":
+            logger.info("La unidad es minutos")
+            fecha_despues = last_datetime + timedelta(minutes=time)
+        else:
+            # Manejar casos no reconocidos o desconocidos
+            logger.error("Unrecognized unit: %s", unit)
+            return (False, "Unrecognized unit")
+
+        # Verifica si la fecha un mes después es anterior a la fecha actual
+        if fecha_despues < fecha_actual:
+            logger.warning("Data needs to be updated")
+            return (True, asset_data)
+        logger.info("Data does not need to be updated")
+        return (False, "")
