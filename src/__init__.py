@@ -2,9 +2,11 @@ from .services import *
 from src.services.DOWNLOAD import *
 
 def main():
-    TDA_CoreData.updateAssets()
     logger.info('Starting application')
-    Scheduling.schedule_spx_download('12:00')
+    # Schedule the task of downloading the SPX
+    Scheduling.schedule_spx_download('10:00')
+    # Schedule the task of updating the SPX
+    Scheduling.schedule_spx_update('12:00')
     
     
     while True:

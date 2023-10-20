@@ -7,6 +7,10 @@ from requests import Response
 
 # Configure the logger
 
+trading_hours = {
+    "start": "15:30",
+    "end": "22:00",
+}
 
 class TDA_CoreData:
     """
@@ -147,14 +151,16 @@ class TDA_CoreData:
                     is_there_more_time = TDA_CoreData.__is_there_more_time(
                         asset, timestamps
                     )
+                    
+                    
                     if is_there_more_time[0]:
-
                         res = TDA_CoreData.__UpdateAsset(asset["symbol"], timestamp,asset)
                         
                         
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
+        logger.info("[END] Updating assets with Twelve Data API")
 
     def __UpdateAsset(asset, interval,complete_asset):
         try:
@@ -181,6 +187,9 @@ class TDA_CoreData:
 
                 if isinstance(response[1], Response):
                     return (False, response[1])
+                
+                # Sumar 1 call
+                TDA_CoreData.__oneMoreCall()
 
 
                 finalDataSet["data"] = response[1]["data"]
