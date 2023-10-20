@@ -1,2 +1,4 @@
-logs
+logs/
 src/system/secret.py
+.vscode/
+tfg_env/

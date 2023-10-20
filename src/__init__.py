@@ -6,7 +6,7 @@ def main():
     # Schedule the task of downloading the SPX
     Scheduling.schedule_spx_download('10:00')
     # Schedule the task of updating the SPX
-    Scheduling.schedule_spx_update('12:00')
+    Scheduling.schedule_spx_update()
     
     
     while True:

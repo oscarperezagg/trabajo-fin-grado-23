@@ -9,8 +9,9 @@ from requests import Response
 
 trading_hours = {
     "start": "15:30",
-    "end": "22:00",
+    "end": "23:00",
 }
+
 
 class TDA_CoreData:
     """
@@ -138,6 +139,17 @@ class TDA_CoreData:
         :return: Un diccionario con los datos descargados.
         """
         logger.info("[START] Updating assets with Twelve Data API")
+        
+        # Obtenemos el horario de trading de hoy
+        start_datetime, end_datetime = TDA_CoreData.__trading_hours()
+        now = datetime.now()
+        
+        if not (start_datetime <= now <= end_datetime):
+            logger.info("No estamos en horario de trading")
+            logger.info("[END] Updating assets with Twelve Data API")
+
+            return (False, "No estamos en horario de trading")
+        
         try:
             # Obtener todos los registros de descarga del activo seleccionado
             config = TDA_CoreData.__getConfig()
@@ -151,18 +163,18 @@ class TDA_CoreData:
                     is_there_more_time = TDA_CoreData.__is_there_more_time(
                         asset, timestamps
                     )
-                    
-                    
+
                     if is_there_more_time[0]:
-                        res = TDA_CoreData.__UpdateAsset(asset["symbol"], timestamp,asset)
-                        
-                        
+                        res = TDA_CoreData.__UpdateAsset(
+                            asset["symbol"], timestamp, asset
+                        )
+
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Updating assets with Twelve Data API")
 
-    def __UpdateAsset(asset, interval,complete_asset):
+    def __UpdateAsset(asset, interval, complete_asset):
         try:
             # Obtener la configuración de la API
 
@@ -181,29 +193,27 @@ class TDA_CoreData:
                 response = TDA_CoreData.__update_assetDataRange(
                     asset, interval, start_date, finalDataSet
                 )
-                
+
                 if not response[0]:
                     return response
 
                 if isinstance(response[1], Response):
                     return (False, response[1])
-                
+
                 # Sumar 1 call
                 TDA_CoreData.__oneMoreCall()
 
-
                 finalDataSet["data"] = response[1]["data"]
-                
+
                 moreData = response[2]
                 if moreData and response[1]["data"]:
                     start_date = response[1]["data"][0]["datetime"]
-                
-                
+
             # Editamos el Asset
             if not finalDataSet["data"]:
                 logger.error("No hay datos que actualizar")
                 return (False, "No hay datos que actualizar")
-            
+
             tempData = complete_asset["data"]
             complete_asset["data"] = finalDataSet["data"]
             complete_asset["data"].extend(tempData)
@@ -217,7 +227,7 @@ class TDA_CoreData:
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
-    
+
     def __getConfig():
         conn = None
         try:
@@ -386,7 +396,7 @@ class TDA_CoreData:
                 "interval": interval,
                 "outputsize": "5000",
                 "previous_close": "true",
-                "start_date":start_date,
+                "start_date": start_date,
                 "apikey": TWELVE_DATA_API_KEY,
             }
 
@@ -408,7 +418,7 @@ class TDA_CoreData:
                 return response
 
             moreData = True if len(temporalDataSet["values"]) > 5000 else False
-            
+
             if parseData == {}:
                 parseData["data"] = temporalDataSet["values"][:-1]
             else:
@@ -419,11 +429,11 @@ class TDA_CoreData:
             logger.info(
                 "Data successfully downloaded for %s with interval %s", asset, interval
             )
-            return (True, parseData,moreData)
+            return (True, parseData, moreData)
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
-    
+
     def __oneMoreCall():
         conn = None
         try:
@@ -477,7 +487,7 @@ class TDA_CoreData:
                 conn.close()
             logger.error("An error occurred: %s", str(e))
             return (False, e)
-        
+
     def __updateAssetData(assetData):
         conn = None
         try:
@@ -493,7 +503,7 @@ class TDA_CoreData:
             assetData["last_modified"] = datetime.now()
             id = assetData["_id"]
             del assetData["_id"]
-            conn.updateById(id,dict(assetData))
+            conn.updateById(id, dict(assetData))
             logger.info("Asset uploaded successfully to the database")
             conn.close()
             return (True, "")
@@ -673,8 +683,63 @@ class TDA_CoreData:
             return (False, "Unrecognized unit")
 
         # Verifica si la fecha un mes después es anterior a la fecha actual
-        if fecha_despues < fecha_actual:
-            logger.warning("Data needs to be updated")
+        check = fecha_despues < fecha_actual
+
+        if not check:
+            logger.info("Data does not need to be updated")
+            return (False, "")
+
+        if interval in ["1month", "1week", "1day"]:
             return (True, asset_data)
-        logger.info("Data does not need to be updated")
-        return (False, "")
+        
+        # Comprobamos si esta muy desactualizado y lo actualizamos
+        new_actual = fecha_actual - timedelta(days=2)
+        if new_actual > fecha_despues:
+            logger.info("Data needs to be updated")
+            return (True, asset_data)
+        
+        
+        # Obtenemos el horario de trading de hoy
+        start_datetime, end_datetime = TDA_CoreData.__trading_hours()
+        
+        if start_datetime < fecha_despues < end_datetime:
+            logger.info("Data needs to be updated")
+            return (True, asset_data)
+        
+        
+        
+        while True:
+            if unit == "hours":
+                logger.info("La unidad es horas")
+                fecha_despues = fecha_despues + timedelta(hours=time)
+            elif unit == "minutes":
+                logger.info("La unidad es minutos")
+                fecha_despues = fecha_despues + timedelta(minutes=time)
+            else:
+                # Manejar casos no reconocidos o desconocidos
+                logger.error("Unrecognized unit: %s", unit)
+                return (False, "Unrecognized unit")
+            
+            logger.info("Comprobamos si nos hemos pasado de la fecha actual")
+            if fecha_despues > fecha_actual:
+                logger.info("Data does not need to be updated")
+                return (False, "")
+            
+            logger.info("Comprobamos si la fecha está dentro del horario de trading")
+            if start_datetime < fecha_despues < end_datetime:
+                logger.info("Data needs to be updated")
+                return (True, asset_data)
+
+
+    def __trading_hours():
+        # Comprobamos si la fecha está dentro del horario de trading
+        now = datetime.now()
+        # Obtén las horas de inicio y finalización desde tu diccionario
+        start_time = datetime.strptime(trading_hours["start"], "%H:%M")
+        end_time = datetime.strptime(trading_hours["end"], "%H:%M")
+
+        # Combina la fecha actual con las horas de inicio y finalización
+        start_datetime = datetime(now.year, now.month, now.day, start_time.hour, start_time.minute)
+        end_datetime = datetime(now.year, now.month, now.day, end_time.hour, end_time.minute)
+        
+        return start_datetime, end_datetime

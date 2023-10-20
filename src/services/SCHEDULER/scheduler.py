@@ -12,10 +12,10 @@ class Scheduling:
         logger.info('Scheduled SPX download for ' + time)
         
     @staticmethod
-    def schedule_spx_update(time):
-        logger.info('Scheduling SPX update for ' + time)
-        schedule.every().day.at(time).do(TDA_CoreData.updateAssets)
-        logger.info('Scheduled SPX update for ' + time)
+    def schedule_spx_update():
+        logger.info('Scheduling SPX update every 1 hour')
+        schedule.every(1).hour.do(TDA_CoreData.updateAssets)
+        logger.info('Scheduled SPX update every 1 hour')
         
     @staticmethod 
     def checkForTask():
