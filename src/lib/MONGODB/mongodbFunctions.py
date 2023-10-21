@@ -98,7 +98,7 @@ class MongoDbFunctions:
         temporalData = bson.BSON.encode(data)
         data_size = len(temporalData)
         if data_size > 16000000:
-            logger.info(f"Data size is {data_size} bytes. Inserting with GridFS.")
+            logger.warning(f"Data size is {data_size} bytes. Inserting with GridFS.")
             self.insertWithFS(data, name)
         else:
             self.collection.insert_one(data)

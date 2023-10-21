@@ -16,6 +16,12 @@ class Scheduling:
         logger.info('Scheduling SPX update every 1 hour')
         schedule.every(1).hour.do(TDA_CoreData.updateAssets)
         logger.info('Scheduled SPX update every 1 hour')
+    
+    @staticmethod
+    def schedule_stock_download(time):
+        logger.info('Scheduling Stocks download for ' + time)
+        schedule.every().day.at(time).do(AV_CoreData.downloadAsset)
+        logger.info('Scheduled Stocks download for ' + time)
         
     @staticmethod 
     def checkForTask():
