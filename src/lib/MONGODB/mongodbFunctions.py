@@ -203,7 +203,7 @@ class MongoDbFunctions:
                 return data
             return self.collection.find_one(query)
 
-    def findByMultipleFields(self, fields, exact_match=True, get_all=False,custom=False):
+    def findByMultipleFields(self, fields, exact_match=True, get_all=False,custom=False,proyeccion=None):
         """
         Find documents in the collection based on multiple fields and their values.
 
@@ -228,8 +228,12 @@ class MongoDbFunctions:
                     query[field] = {"$regex": value, "$options": "i"}
 
         if get_all:
+            if proyeccion:
+                return list(self.collection.find(query,proyeccion))
             return list(self.collection.find(query))
         else:
+            if proyeccion:
+                return self.collection.find_one(query,proyeccion)
             return self.collection.find_one(query)
 
     def findByComplexQuery(self, query, get_all=False):

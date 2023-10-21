@@ -10,7 +10,7 @@ os.makedirs(log_dir, exist_ok=True)
 
 # Configura el logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # Establece el nivel de registro en INFO o inferior
+logger.setLevel(logging.DEBUG)  # Establece el nivel de registro en INFO o inferior
 
 # Crea un nuevo formatter que colorea las trazas de ERROR en rojo
 formatter = ColoredFormatter(

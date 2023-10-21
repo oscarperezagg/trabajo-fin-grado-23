@@ -38,13 +38,24 @@ class AV_CoreData:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
             timestamps = config["timestamps"].keys()
-            assets = config["assets"]
-
+            all_assets = config["assets"]
+            deleted_assets = []
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
                 logger.info("Downloading data for %s", timestamp)
-                for asset in assets:
+                # Obtenemos los asset que hay que descargar obteniendo los assets para el internvalo
+                res = AV_CoreData.__assestToBeDownloaded(timestamp, all_assets)
+                if not res[0]:
+                    return res
+                assets = res[1]
+                total_assets = len(assets)
+                # Descargamos los assets
+                for index, asset in enumerate(assets):
+                    if asset in deleted_assets:
+                        continue
                     logger.info("Downloading %s data", asset)
+                    logger.info("Asset %s of %s (%.2f%%)", index + 1, total_assets, (index + 1) * 100 / total_assets)
+
                     # Añadir check para ver si ya está
 
                     res = AV_CoreData.__findAsset(asset, timestamp)
@@ -60,6 +71,10 @@ class AV_CoreData:
                             asset, timestamp, LIMIT
                         )
 
+                    if res[0] and res[1] == "Asset not found on Alpha Vantaje API":
+                        deleted_assets.append(res[2])
+                        continue
+
                     if not res[0] and res[1] == "Llamadas diarias agotadas":
                         return (False, "Llamadas diarias agotadas")
 
@@ -69,6 +84,7 @@ class AV_CoreData:
 
                     if res[0]:
                         logger.info("Asset downloaded successfully")
+                        
 
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
@@ -114,6 +130,20 @@ class AV_CoreData:
 
             data = response[1].json()
 
+            if data and data.get("Error Message"):
+                logger.error("Asset not found on Alpha Vantaje API")
+                logger.error(data.get("Error Message"))
+                error = data.get("Error Message")
+                if error and "Invalid API call" in error:
+                    res = AV_CoreData.__deleteAssetFromConfig(asset)
+                    if not res[0]:
+                        logger.error("An error occurred: Asset no deleted")
+                        return res
+                    logger.warning("Asset deleted successfully")
+                    return (True, "Asset not found on Alpha Vantaje API", asset)
+                else:
+                    return (False, data.get("Error Message"))
+
             data = AV_CoreData.__parseMonthlyData(data, interval)
             if not data[0]:
                 return data
@@ -136,13 +166,12 @@ class AV_CoreData:
 
             # Creamos el objeto final que vamos a subir
             finalDataSet = {}
-           
 
             params = {
                 "symbol": asset,
                 "apikey": ALPHA_VANTAGE_API_KEY,
                 "interval": interval,
-                "month":""
+                "month": "",
             }
 
             # Obtenemos el mes actual
@@ -160,38 +189,54 @@ class AV_CoreData:
                 for month in months:
                     # Formato year-month
                     years_and_months.append(str(year) + "-" + str(month).zfill(2))
-                    
+
             logger.info("Llamadas necesarias: %s", len(years_and_months))
-            
+
             # Obtenemos los datos
             for year_month in years_and_months:
                 params["month"] = year_month
-                
+
                 # Comprobar si hay llamadas disponibles
                 check = AV_CoreData.__anotherCall()
                 if not check[0]:
                     return check
-                
+
                 response = CoreStockAPIs.time_series_intraday(**params)
-                
+
                 # Sumar 1 call
                 AV_CoreData.__oneMoreCall()
 
                 # Comprobamos si hay errores
                 if not response[0]:
                     logger.error(
-                        "Failed to download data for %s with interval %s", asset, interval
+                        "Failed to download data for %s with interval %s",
+                        asset,
+                        interval,
                     )
                     return (False, response)
 
                 # Obtenemos los datos
                 data = response[1].json()
 
+                # Comprobamos si hay errores
+                if data and data.get("Error Message"):
+                    logger.error("Asset not found on Alpha Vantaje API")
+                    logger.error(data.get("Error Message"))
+                    if data.get("Error Message") == "Invalid API call":
+                        res = AV_CoreData.__deleteAssetFromConfig(asset)
+                        if not res[0]:
+                            logger.error("An error occurred: Asset no deleted")
+                            return res
+                        logger.warning("Asset deleted successfully")
+                        return (True, "Asset not found on Alpha Vantaje API", asset)
+                    else:
+                        return (False, data.get("Error Message"))
+
                 # Parseamos los datos
                 data = AV_CoreData.__parseMonthlyData(data, interval)
                 if not data[0]:
                     return data
-                
+
                 if finalDataSet == {}:
                     finalDataSet = data[1]
                 else:
@@ -783,6 +828,78 @@ class AV_CoreData:
             logger.info("Asset uploaded successfully to the database")
             conn.close()
             return (True, "Upload successful")
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __deleteAssetFromConfig(asset):
+        conn = None
+
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "config",
+            )
+
+            config = AV_CoreData.__getConfig()
+            # Delete asset from config asset array
+            config["assets"].remove(asset)
+            # Update config
+            id = config["_id"]
+            del config["_id"]
+            conn.updateById(id, dict(config))
+            conn.close()
+            return (True, "")
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __assestToBeDownloaded(interval, assets):
+        conn = None
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "CoreData",
+            )
+            # Realizar la consulta y proyectar solo el campo "symbol"
+            fields = {
+                "interval": interval,
+                "symbol": {"$ne": "SPX"}
+            }
+
+            proyeccion = {"symbol": 1, "_id": 0}  # 1 indica que deseas incluir el campo, 0 indica que no deseas incluirlo
+
+            res = conn.findByMultipleFields(fields, get_all=True,custom=True,proyeccion=proyeccion)
+            if not res:
+                return (True,assets)
+            
+            symbols_array = [item['symbol'] for item in res]
+                    
+            # Convertir los arrays en conjuntos
+            conjunto_assets = set(assets)
+            conjunto_symbols = set(symbols_array)
+
+            # Obtener la diferencia de conjuntos
+            resultado_set = conjunto_assets - conjunto_symbols
+
+            # Convertir el resultado de nuevo en una lista si es necesario
+            resultado_lista = list(resultado_set)
+            conn.close()
+            logger.info(f"Eliminados {len(assets)-len(resultado_lista)} activos que ya están en la base de datos")
+            logger.info(f"Activos a descargar: {len(resultado_lista)}")
+            return (True,resultado_lista)
         except Exception as e:
             if conn:
                 conn.close()
