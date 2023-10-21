@@ -325,7 +325,7 @@ class MongoDbFunctions:
         else:
             self.collection.delete_many(query)
 
-    def deleteByMultipleField(self, field, value, exact_match=True):
+    def deleteByMultipleField(self, field=None, value=None, exact_match=True,custom=False,fields=None):
         """
         Delete documents in the collection based on multiple fields and their values.
 
@@ -333,12 +333,16 @@ class MongoDbFunctions:
             fields (dict): A dictionary where keys are field names and values are values to search for.
             exact_match (bool, optional): Whether to perform an exact match or not. Default is True.
         """
-        if exact_match:
-            query = {field: value}
+        if custom:
+            query = fields
         else:
-            query = {field: {"$regex": value, "$options": "i"}}
+            if exact_match:
+                query = {field: value}
+            else:
+                query = {field: {"$regex": value, "$options": "i"}}
+            
         if exact_match:
-            self.collection.delete_one(query)
+            logger.info(self.collection.delete_one(query))
         else:
             self.collection.delete_many(query)
 

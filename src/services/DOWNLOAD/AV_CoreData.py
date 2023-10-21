@@ -12,7 +12,7 @@ trading_hours = {
     "end": "23:00",
 }
 
-LIMIT = 2018
+LIMIT = 2020
 
 
 class AV_CoreData:
@@ -49,12 +49,17 @@ class AV_CoreData:
                     return res
                 assets = res[1]
                 total_assets = len(assets)
-                # Descargamos los assets
+                # Descargamos los assets
                 for index, asset in enumerate(assets):
                     if asset in deleted_assets:
                         continue
                     logger.info("Downloading %s data", asset)
-                    logger.info("Asset %s of %s (%.2f%%)", index + 1, total_assets, (index + 1) * 100 / total_assets)
+                    logger.info(
+                        "Asset %s of %s (%.2f%%)",
+                        index + 1,
+                        total_assets,
+                        (index + 1) * 100 / total_assets,
+                    )
 
                     # Añadir check para ver si ya está
 
@@ -84,7 +89,6 @@ class AV_CoreData:
 
                     if res[0]:
                         logger.info("Asset downloaded successfully")
-                        
 
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
@@ -112,6 +116,7 @@ class AV_CoreData:
             elif interval == "1week":
                 response = CoreStockAPIs.time_series_weekly(**params)
             elif interval == "1day":
+                params["outputsize"] = "full"
                 response = CoreStockAPIs.time_series_daily(**params)
             else:
                 logger.error(
@@ -172,6 +177,7 @@ class AV_CoreData:
                 "apikey": ALPHA_VANTAGE_API_KEY,
                 "interval": interval,
                 "month": "",
+                "outputsize": "full",
             }
 
             # Obtenemos el mes actual
@@ -222,7 +228,8 @@ class AV_CoreData:
                 if data and data.get("Error Message"):
                     logger.error("Asset not found on Alpha Vantaje API")
                     logger.error(data.get("Error Message"))
-                    if data.get("Error Message") == "Invalid API call":
+                    error = data.get("Error Message")
+                    if error and "Invalid API call" in error:
                         res = AV_CoreData.__deleteAssetFromConfig(asset)
                         if not res[0]:
                             logger.error("An error occurred: Asset no deleted")
@@ -280,69 +287,174 @@ class AV_CoreData:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
             timestamps = config["timestamps"]
-            assets = config["assets"]
+
             for timestamp in timestamps.keys():
-                res = AV_CoreData.__updatable_assets(timestamp, assets)
+                res = AV_CoreData.__assestToBeUpdated(timestamp)
                 if not res[0]:
-                    break
-                for asset in res[1]:
+                    return res
+                assets = res[1]
+                total_assets = len(assets)
+
+                for index, asset in enumerate(assets):
+                    logger.info(
+                        "Asset %s of %s (%.2f%%)",
+                        index + 1,
+                        total_assets,
+                        (index + 1) * 100 / total_assets,
+                    )
                     is_there_more_time = AV_CoreData.__is_there_more_time(
                         asset, timestamps
                     )
 
                     if is_there_more_time[0]:
-                        res = AV_CoreData.__UpdateAsset(
-                            asset["symbol"], timestamp, asset
-                        )
+                        logger.warning(f"Updating {asset['symbol']} for {timestamp}...")
+                        complete_asset = AV_CoreData.__getAsset(asset)
+                        if timestamp in ["1month", "1week", "1day"]:
+                            # ELIMINAMOS LOS DATOS DEL ACTIVO
+                            res = AV_CoreData.__deleteAsset(complete_asset)
+                            res = AV_CoreData.__downloadNoIntradayDataAsset(
+                                complete_asset["symbol"], timestamp
+                            )
+                        else:
+                            res = AV_CoreData.__updateAsset(
+                                complete_asset["symbol"], timestamp, complete_asset
+                            )
+
+                        if not res[0] and res[1] == "Llamadas diarias agotadas":
+                            return (False, "Llamadas diarias agotadas")
+
+                        if not res[0]:
+                            logger.error("An error occurred: %s", str(res[1]))
+                            return (False, "")
+
+                        if res[0]:
+                            logger.info("Asset downloaded successfully")
 
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Updating assets with Alpha Vantaje API")
 
-    def __UpdateAsset(asset, interval, complete_asset):
+    def __updateAsset(asset, interval, complete_asset):
         try:
             # Obtener la configuración de la API
 
-            # Descargar datos
-            finalDataSet = {}
-            moreData = True
-            earliestTimestamp = None
-            start_date = complete_asset["data"][0]["datetime"]
+            try:
+                start_date = datetime.strptime(
+                    complete_asset["data"][0]["datetime"], "%Y-%m-%d"
+                )
+            except Exception as e:
+                start_date = datetime.strptime(
+                    complete_asset["data"][0]["datetime"], "%Y-%m-%d %H:%M:%S"
+                )
+            # Completamos el mes actual
+            now = datetime.now()
+            actual_month = now.month
+            actual_year = now.year
+            years = list(range(start_date.year, actual_year + 1, 1))
+            years_and_months = []
+            total_years = len(years)
 
-            while moreData:
+            if total_years == 1:
+                months = list(range(start_date.month, actual_month + 1, 1))
+                for month in months:
+                    # Formato year-month
+                    years_and_months.append(str(years[0]) + "-" + str(month).zfill(2))
+            else:
+                for index, year in enumerate(years):
+                    if index == 0:
+                        months = list(range(start_date.month, 13, 1))
+                    elif index + 1 == total_years:
+                        months = list(range(1, actual_month + 1, 1))
+                    else:
+                        months = list(range(1, 13, 1))
+                    for month in months:
+                        # Formato year-month
+                        years_and_months.append(str(year) + "-" + str(month).zfill(2))
+
+            # Obtenemos los datos
+            finalDataSet = {}
+
+            params = {
+                "symbol": asset,
+                "apikey": ALPHA_VANTAGE_API_KEY,
+                "interval": interval,
+                "month": "",
+                "outputsize": "full",
+            }
+
+            for year_month in years_and_months:
+                params["month"] = year_month
+
                 # Comprobar si hay llamadas disponibles
                 check = AV_CoreData.__anotherCall()
                 if not check[0]:
                     return check
 
-                response = AV_CoreData.__update_assetDataRange(
-                    asset, interval, start_date, finalDataSet
-                )
-
-                if not response[0]:
-                    return response
-
-                if isinstance(response[1], Response):
-                    return (False, response[1])
+                response = CoreStockAPIs.time_series_intraday(**params)
 
                 # Sumar 1 call
                 AV_CoreData.__oneMoreCall()
 
-                finalDataSet["data"] = response[1]["data"]
+                # Comprobamos si hay errores
+                if not response[0]:
+                    logger.error(
+                        "Failed to download data for %s with interval %s",
+                        asset,
+                        interval,
+                    )
+                    return (False, response)
 
-                moreData = response[2]
-                if moreData and response[1]["data"]:
-                    start_date = response[1]["data"][0]["datetime"]
+                # Obtenemos los datos
+                data = response[1].json()
 
-            # Editamos el Asset
-            if not finalDataSet["data"]:
-                logger.error("No hay datos que actualizar")
-                return (False, "No hay datos que actualizar")
+                # Comprobamos si hay errores
+                if data and data.get("Error Message"):
+                    logger.error("Asset not found on Alpha Vantaje API")
+                    logger.error(data.get("Error Message"))
+                    error = data.get("Error Message")
+                    if error and "Invalid API call" in error:
+                        res = AV_CoreData.__deleteAssetFromConfig(asset)
+                        if not res[0]:
+                            logger.error("An error occurred: Asset no deleted")
+                            return res
+                        logger.warning("Asset deleted successfully")
+                        return (True, "Asset not found on Alpha Vantaje API", asset)
+                    else:
+                        return (False, data.get("Error Message"))
 
-            tempData = complete_asset["data"]
+                # Parseamos los datos
+                data = AV_CoreData.__parseMonthlyData(data, interval)
+                if not data[0]:
+                    return data
+
+                if finalDataSet == {}:
+                    finalDataSet = data[1]
+                else:
+                    finalDataSet["data"].extend(data[1]["data"])
+
+            # Eliminar los datos del mes start_date.month de complete_asset
+            index = 0
+            for i in range(len(complete_asset["data"])):
+                tempDate = complete_asset["data"][i]["datetime"]
+                try:
+                    tempDate = datetime.strptime(
+                        complete_asset["data"][0]["datetime"], "%Y-%m-%d"
+                    )
+                except Exception as e:
+                    tempDate = datetime.strptime(
+                        complete_asset["data"][0]["datetime"], "%Y-%m-%d %H:%M:%S"
+                    )
+
+                if tempDate.month != start_date.month:
+                    break
+
+                index += 1
+
+            tempData = complete_asset["data"][index:]
             complete_asset["data"] = finalDataSet["data"]
             complete_asset["data"].extend(tempData)
+
             # Subir datos
             res = AV_CoreData.__updateAssetData(complete_asset)
             if not res[0]:
@@ -515,32 +627,6 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
-    def __earliestTimestamp(asset, interval, mic_code):
-        try:
-            date = ReferenceData.earliest_timestamp(
-                symbol=asset,
-                interval=interval,
-                mic_code=mic_code,
-                apikey=TWELVE_DATA_API_KEY,
-            )
-
-            if not date[0]:
-                return (False, date)
-
-            date = date[1].json()
-            if date.get("status") == "error":
-                return (False, date)
-            logger.info(
-                "Earliest timestamp for %s with interval %s is %s",
-                asset,
-                interval,
-                date["datetime"],
-            )
-            return (True, date)
-        except Exception as e:
-            logger.error("An error occurred: %s", str(e))
-            return (False, e)
-
     def __is_there_more_time(asset_data, timestamps):
         interval = asset_data["interval"]  # 2023-10-19 13:05:00
         try:
@@ -556,6 +642,46 @@ class AV_CoreData:
         unit = timestamps[interval][1]
 
         fecha_actual = datetime.now()
+        numero_semana_actual = fecha_actual.isocalendar()[1]
+        numero_semana_dato = last_datetime.isocalendar()[1]
+
+        if interval == "1month":
+            if fecha_actual.year > last_datetime.year:
+                return (True, asset_data)
+            elif fecha_actual.month > last_datetime.month:
+                return (True, asset_data)
+            else:
+                return (False, "")
+
+        if interval == "1week":
+            if fecha_actual.year > last_datetime.year:
+                return (True, asset_data)
+            elif fecha_actual.month > last_datetime.month:
+                return (True, asset_data)
+            elif numero_semana_actual > numero_semana_dato:
+                return (True, asset_data)
+            else:
+                return (False, "")
+
+        if interval == "1day":
+            dia_semana = fecha_actual.weekday()
+            if fecha_actual.year > last_datetime.year:
+                return (True, asset_data)
+            elif fecha_actual.month > last_datetime.month:
+                return (True, asset_data)
+            elif fecha_actual.day >= last_datetime.day + 3:
+                return (True, asset_data)
+            elif fecha_actual.day == last_datetime.day + 2 and (0 < dia_semana < 6):
+                return (True, asset_data)
+            elif (
+                fecha_actual.day == last_datetime.day + 1
+                and fecha_actual.hour >= 22
+                and dia_semana < 5
+            ):
+                return (True, asset_data)
+
+            else:
+                return (False, "")
 
         # Utiliza la variable 'unit' en lugar de 'days' en timedelta
         if unit == "days":
@@ -579,7 +705,7 @@ class AV_CoreData:
             logger.info("Data does not need to be updated")
             return (False, "")
 
-        if interval in ["1month", "1week", "1day"]:
+        if interval == "1day":
             return (True, asset_data)
 
         # Comprobamos si esta muy desactualizado y lo actualizamos
@@ -612,12 +738,14 @@ class AV_CoreData:
                 logger.info("Data does not need to be updated")
                 return (False, "")
 
+            dia_semana = fecha_despues.weekday()
+
             logger.info("Comprobamos si la fecha está dentro del horario de trading")
-            if start_datetime < fecha_despues < end_datetime:
+            if start_datetime < fecha_despues < end_datetime and dia_semana < 5:
                 logger.info("Data needs to be updated")
                 return (True, asset_data)
 
-    def __updatable_assets(interval, assets):
+    def __obtain_updatable_assets(interval, assets):
         conn = None
         try:
             conn = MongoDbFunctions(
@@ -874,19 +1002,21 @@ class AV_CoreData:
                 "CoreData",
             )
             # Realizar la consulta y proyectar solo el campo "symbol"
-            fields = {
-                "interval": interval,
-                "symbol": {"$ne": "SPX"}
-            }
+            fields = {"interval": interval, "symbol": {"$ne": "SPX"}}
 
-            proyeccion = {"symbol": 1, "_id": 0}  # 1 indica que deseas incluir el campo, 0 indica que no deseas incluirlo
+            proyeccion = {
+                "symbol": 1,
+                "_id": 0,
+            }  # 1 indica que deseas incluir el campo, 0 indica que no deseas incluirlo
 
-            res = conn.findByMultipleFields(fields, get_all=True,custom=True,proyeccion=proyeccion)
+            res = conn.findByMultipleFields(
+                fields, get_all=True, custom=True, proyeccion=proyeccion
+            )
             if not res:
-                return (True,assets)
-            
-            symbols_array = [item['symbol'] for item in res]
-                    
+                return (True, assets)
+
+            symbols_array = [item["symbol"] for item in res]
+
             # Convertir los arrays en conjuntos
             conjunto_assets = set(assets)
             conjunto_symbols = set(symbols_array)
@@ -897,9 +1027,91 @@ class AV_CoreData:
             # Convertir el resultado de nuevo en una lista si es necesario
             resultado_lista = list(resultado_set)
             conn.close()
-            logger.info(f"Eliminados {len(assets)-len(resultado_lista)} activos que ya están en la base de datos")
+            logger.info(
+                f"Eliminados {len(assets)-len(resultado_lista)} activos que ya están en la base de datos"
+            )
             logger.info(f"Activos a descargar: {len(resultado_lista)}")
-            return (True,resultado_lista)
+            return (True, resultado_lista)
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __assestToBeUpdated(interval):
+        conn = None
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "CoreData",
+            )
+            # Realizar la consulta y proyectar solo el campo "symbol"
+            fields = {"interval": interval, "symbol": {"$ne": "SPX"}}
+            projection = {
+                "interval": 1,
+                "symbol": 1,
+                "data": {
+                    "$slice": 1
+                },  # Obtener solo el primer elemento del array "data"
+            }
+            res = conn.findByMultipleFields(
+                fields, get_all=True, custom=True, proyeccion=projection
+            )
+            if not res:
+                return (True, [])
+
+            conn.close()
+            logger.info(f"Activos a actualizar: {len(res)}")
+            return (True, res)
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __deleteAsset(asset):
+        conn = None
+
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "CoreData",
+            )
+            fields = {"symbol": asset["symbol"], "interval": asset["interval"]}
+            # Delete asset from config asset array
+            conn.deleteByMultipleField(custom=True, fields=fields)
+            conn.close()
+            return (True, "")
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __getAsset(asset):
+        conn = None
+        try:
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "CoreData",
+            )
+            fields = {"symbol": asset["symbol"], "interval": asset["interval"]}
+            # Delete asset from config asset array
+            element = conn.findByMultipleFields(custom=True, fields=fields)
+            conn.close()
+            return element
         except Exception as e:
             if conn:
                 conn.close()

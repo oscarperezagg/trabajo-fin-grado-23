@@ -26,6 +26,15 @@ class Scheduling:
         logger.info('Scheduling Stocks download for ' + time)
         schedule.every().day.at(time).do(AV_CoreData.downloadAsset)
         logger.info('Scheduled Stocks download for ' + time)
+        
+    @staticmethod
+    def schedule_stocks_update(option="hour", time=1):
+        logger.info(f'Scheduling SPX update every {time} {option}')
+        if option == "hour":
+            schedule.every(time).hour.do(AV_CoreData.updateAssets)
+        elif option == "minute":
+            schedule.every(time).minutes.do(TDA_CoreData.updateAssets)
+        logger.info(f'Scheduled SPX update every {time} {option}')
     
     @staticmethod
     def schedule_stats(option="minute", time=5):

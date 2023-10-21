@@ -666,7 +666,45 @@ class TDA_CoreData:
         unit = timestamps[interval][1]
 
         fecha_actual = datetime.now()
+        numero_semana_actual = fecha_actual.isocalendar()[1]
+        numero_semana_dato = last_datetime.isocalendar()[1]
 
+        
+        if interval == "1month":
+            if fecha_actual.year > last_datetime.year:
+                return (True, asset_data)
+            elif fecha_actual.month > last_datetime.month:
+                return (True, asset_data)
+            else:
+                return (False, "")
+        
+        if interval == "1week":
+            if fecha_actual.year > last_datetime.year:
+                return (True, asset_data)
+            elif fecha_actual.month > last_datetime.month:
+                return (True, asset_data)
+            elif numero_semana_actual > numero_semana_dato:
+                return (True, asset_data)
+            else:
+                return (False, "")
+            
+        if interval == "1day":
+            dia_semana = fecha_actual.weekday()
+            if fecha_actual.year > last_datetime.year:
+                return (True, asset_data)
+            elif fecha_actual.month > last_datetime.month:
+                return (True, asset_data)
+            elif fecha_actual.day >= last_datetime.day + 3:
+                return (True, asset_data)
+            elif fecha_actual.day == last_datetime.day + 2 and (0 < dia_semana < 6):
+                return (True, asset_data)
+            elif fecha_actual.day == last_datetime.day + 1 and fecha_actual.hour >= 22 and dia_semana < 5:
+                return (True, asset_data)
+
+            else:
+                return (False, "")
+            
+            
         # Utiliza la variable 'unit' en lugar de 'days' en timedelta
         if unit == "days":
             logger.info("La unidad es días")
@@ -689,25 +727,22 @@ class TDA_CoreData:
             logger.info("Data does not need to be updated")
             return (False, "")
 
-        if interval in ["1month", "1week", "1day"]:
+        if interval == "1day":
             return (True, asset_data)
-        
+
         # Comprobamos si esta muy desactualizado y lo actualizamos
         new_actual = fecha_actual - timedelta(days=2)
         if new_actual > fecha_despues:
             logger.info("Data needs to be updated")
             return (True, asset_data)
-        
-        
+
         # Obtenemos el horario de trading de hoy
-        start_datetime, end_datetime = TDA_CoreData.__trading_hours()
-        
+        start_datetime, end_datetime = AV_CoreData.__trading_hours()
+
         if start_datetime < fecha_despues < end_datetime:
             logger.info("Data needs to be updated")
             return (True, asset_data)
-        
-        
-        
+
         while True:
             if unit == "hours":
                 logger.info("La unidad es horas")
@@ -719,14 +754,16 @@ class TDA_CoreData:
                 # Manejar casos no reconocidos o desconocidos
                 logger.error("Unrecognized unit: %s", unit)
                 return (False, "Unrecognized unit")
-            
+
             logger.info("Comprobamos si nos hemos pasado de la fecha actual")
             if fecha_despues > fecha_actual:
                 logger.info("Data does not need to be updated")
                 return (False, "")
-            
+
+            dia_semana = fecha_despues.weekday()
+
             logger.info("Comprobamos si la fecha está dentro del horario de trading")
-            if start_datetime < fecha_despues < end_datetime:
+            if start_datetime < fecha_despues < end_datetime and dia_semana < 5:
                 logger.info("Data needs to be updated")
                 return (True, asset_data)
 
