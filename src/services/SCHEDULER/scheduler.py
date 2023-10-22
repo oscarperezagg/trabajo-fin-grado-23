@@ -43,6 +43,8 @@ class Scheduling:
             schedule.every(time).hour.do(Stats.get_stats)
         elif option == "minute":
             schedule.every(time).minutes.do(Stats.get_stats)
+        elif option == "seconds":
+            schedule.every(time).seconds.do(Stats.get_stats)
         logger.info(f"Scheduled stats every {time} {option}")
 
     @staticmethod

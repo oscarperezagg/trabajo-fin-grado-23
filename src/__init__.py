@@ -2,6 +2,8 @@ from src.services import *
 from src.services.DOWNLOAD import *
 
 def main(justStats=False):
+    # Purge data
+    cleanDatabase.purgeData()
     # Show stats
     Stats.get_stats()
     # Temporal
@@ -12,12 +14,16 @@ def main(justStats=False):
         # Schedule the task of updating the SPX
         Scheduling.schedule_spx_update('hour', 1)
         # Schedule the task of downloading stocks
-        Scheduling.schedule_stock_download('12:23')
+        Scheduling.schedule_stock_download('12:28')
         # Schedule the task of updating stocks
         # Scheduling.schedule_stocks_update('hour', 1)
         
-    Scheduling.schedule_stats('minute', 1)
+    
+        
+    Scheduling.schedule_stats('seconds', 10)
 
     while True:
         Scheduling.checkForTask()
-        
+    
+    
+    

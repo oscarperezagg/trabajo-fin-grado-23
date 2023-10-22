@@ -7,6 +7,7 @@ import logging
 class Stats:
     @staticmethod
     def get_stats():
+
         logger.setLevel(logging.CRITICAL)
         api_names = Stats.__getApiNames()
         if not api_names[0]:
@@ -29,7 +30,8 @@ class Stats:
                 )
             stats[api] = tempStats
         logger.setLevel(logging.DEBUG)
-
+        # Hacer clear de la consola
+        print("\033c")
         print("")
         logger.debug("[INICO] - ESTADISTICAS\n")
         for api in api_names[1]:

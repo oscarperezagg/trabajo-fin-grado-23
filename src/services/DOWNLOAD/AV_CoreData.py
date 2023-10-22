@@ -539,6 +539,9 @@ class AV_CoreData:
                 conn.close()
             logger.error("An error occurred: %s", str(e))
             return (False, e)
+        
+    ######################
+
 
     ######################
     ### SUPORT METHODS ###
