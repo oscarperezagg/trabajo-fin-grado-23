@@ -260,14 +260,8 @@ class TDA_CoreData:
             if last_modification_date:
                 current_date = datetime.now()
 
-                # Calcula la diferencia de tiempo entre la fecha de modificación y la fecha actual
-                time_difference = current_date - last_modification_date
-
-                # Define la duración mínima requerida (en este caso, 1 día)
-                min_duration = timedelta(days=1)
-
                 # Comprueba si la diferencia de tiempo es mayor que la duración mínima
-                if time_difference > min_duration:
+                if current_date.day > last_modification_date.day:
                     logger.info("La fecha de modificación es de hace un día.")
                     TDA_CoreData.__DailyCallTOZero()
                     TDA_CoreData.__minuteCallTOZero()
