@@ -1,2 +1,2 @@
-from src.services import *
+from src.modules import *
 

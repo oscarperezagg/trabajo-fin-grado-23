@@ -1,8 +1,8 @@
 import threading
 
-from src.services import *
-from src.services.DOWNLOAD import *
-from src.interface import *
+from src.modules import *
+from src.modules.DATA_MODULE import *
+
 
 def main(justStats=False):
     # Purge data
@@ -46,8 +46,6 @@ def iniciar_app(justStats=False):
     check_for_task_thread.start()  # Iniciar el hilo de Scheduling.checkForTask()
     print("")
 
-    #logger.debug("Iniciar la aplicación tkinter en el hilo principal")
-    #iniciar_tkinter()
 
 
 

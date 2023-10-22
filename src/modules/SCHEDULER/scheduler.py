@@ -1,7 +1,6 @@
 import schedule
 import time
-from src.services.DOWNLOAD import *
-from src.services.STATS import *
+from src.modules.DATA_MODULE import *
 from src.system.logging_config import logger
 
 
