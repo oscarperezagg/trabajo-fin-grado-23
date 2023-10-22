@@ -608,7 +608,7 @@ class AV_CoreData:
                 < config_twelve_data_api["max_llamadas_diarias"] - 20
             )
             if not check:
-                logger.info("Llamadas diarias agotadas")
+                logger.warning("Llamadas diarias agotadas")
                 return (False, "Llamadas diarias agotadas")
             # Comprobamos llamadas por minuto
             check = (
