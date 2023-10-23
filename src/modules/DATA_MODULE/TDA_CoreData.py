@@ -38,7 +38,7 @@ class TDA_CoreData:
             for timestamp in timestamps:
                 logger.info("Downloading data for %s", timestamp)
                 for asset in assets:
-                    logger.info("Downloading %s data", asset)
+                    logger.debug("Downloading %s data", asset)
                     # Añadir check para ver si ya está
                     update = False
                     res = TDA_CoreData.__findAsset(asset, timestamp)
@@ -111,9 +111,9 @@ class TDA_CoreData:
                         return res
 
                     earliestTimestamp = res[1]["datetime"]
-                    logger.info("Earliest timestamp: %s", earliestTimestamp)
+                    logger.debug("Earliest timestamp: %s", earliestTimestamp)
 
-                logger.info(
+                logger.debug(
                     "Last downloaded timestmp: %s", finalDataSet["data"][-1]["datetime"]
                 )
                 if finalDataSet["data"][-1]["datetime"] == earliestTimestamp:
@@ -239,9 +239,9 @@ class TDA_CoreData:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Twelve Data")
+            logger.debug("Obteniendo configuración de la API Twelve Data")
             config_twelve_data_api = conn.findByField("nombre_api", "twelvedataapi")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             conn.close()
             return config_twelve_data_api
         except Exception as e:
@@ -262,7 +262,7 @@ class TDA_CoreData:
 
                 # Comprueba si la diferencia de tiempo es mayor que la duración mínima
                 if current_date.day > last_modification_date.day:
-                    logger.info("La fecha de modificación es de hace un día.")
+                    logger.debug("La fecha de modificación es de hace un día.")
                     TDA_CoreData.__DailyCallTOZero()
                     TDA_CoreData.__minuteCallTOZero()
                     return (True, "")
@@ -277,7 +277,7 @@ class TDA_CoreData:
                 max_duration = timedelta(minutes=2)
 
                 if time_difference > max_duration:
-                    logger.info(
+                    logger.debug(
                         "La fecha de modificación es de hace más de un minuto y medio."
                     )
                     TDA_CoreData.__minuteCallTOZero()
@@ -289,7 +289,7 @@ class TDA_CoreData:
                 < config_twelve_data_api["max_llamadas_diarias"] - 20
             )
             if not check:
-                logger.info("Llamadas diarias agotadas")
+                logger.debug("Llamadas diarias agotadas")
                 return (False, "Llamadas diarias agotadas")
             # Comprobamos llamadas por minuto
             check = (
@@ -298,7 +298,7 @@ class TDA_CoreData:
             )
             if not check:
                 TDA_CoreData.__minuteCallTOZero()
-                logger.info("Esperando 60 segundos...")
+                logger.debug("Esperando 60 segundos...")
                 time.sleep(80)
             return (True, "")
         except Exception as e:
@@ -320,7 +320,7 @@ class TDA_CoreData:
             date = date[1].json()
             if date.get("status") == "error":
                 return (False, date)
-            logger.info(
+            logger.debug(
                 "Earliest timestamp for %s with interval %s is %s",
                 asset,
                 interval,
@@ -333,7 +333,7 @@ class TDA_CoreData:
 
     def __assetDataRange(asset, interval, end_date=None, parseData={}):
         try:
-            logger.info(
+            logger.debug(
                 "Downloading asset data for %s with interval %s", asset, interval
             )
 
@@ -371,7 +371,7 @@ class TDA_CoreData:
             else:
                 parseData["data"].extend(temporalDataSet["values"])
 
-            logger.info(
+            logger.debug(
                 "Data successfully downloaded for %s with interval %s", asset, interval
             )
             return (True, parseData)
@@ -381,7 +381,7 @@ class TDA_CoreData:
 
     def __update_assetDataRange(asset, interval, start_date=None, parseData={}):
         try:
-            logger.info(
+            logger.debug(
                 "Downloading asset data for %s with interval %s", asset, interval
             )
 
@@ -420,7 +420,7 @@ class TDA_CoreData:
                 parseData["data"] = temporalDataSet["values"][:-1]
                 parseData["data"].extend(tempData)
 
-            logger.info(
+            logger.debug(
                 "Data successfully downloaded for %s with interval %s", asset, interval
             )
             return (True, parseData, moreData)
@@ -440,16 +440,16 @@ class TDA_CoreData:
                 "config",
             )
 
-            logger.info("Obteniendo configuración de la API Twelve Data")
+            logger.debug("Obteniendo configuración de la API Twelve Data")
             config_twelve_data_api = conn.findByField("nombre_api", "twelvedataapi")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             config_twelve_data_api["llamadas_actuales_diarias"] += 1
             config_twelve_data_api["llamadas_actuales_por_minuto"] += 1
             config_twelve_data_api["fecha_modificacion"] = datetime.now()
 
             conn.updateById(config_twelve_data_api["_id"], config_twelve_data_api)
 
-            logger.info("Registry updated successfully")
+            logger.debug("Registry updated successfully")
             conn.close()
             return (True, "")
         except Exception as e:
@@ -469,11 +469,11 @@ class TDA_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
-            logger.info("Uploading data for %s", assetData["symbol"])
+            logger.debug("Uploading data for %s", assetData["symbol"])
             assetData["last_modified"] = datetime.now()
 
             conn.insert(dict(assetData))
-            logger.info("Asset uploaded successfully to the database")
+            logger.debug("Asset uploaded successfully to the database")
             conn.close()
             return (True, "")
         except Exception as e:
@@ -493,12 +493,12 @@ class TDA_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
-            logger.info("Uploading data for %s", assetData["symbol"])
+            logger.debug("Uploading data for %s", assetData["symbol"])
             assetData["last_modified"] = datetime.now()
             id = assetData["_id"]
             del assetData["_id"]
             conn.updateById(id, dict(assetData))
-            logger.info("Asset uploaded successfully to the database")
+            logger.debug("Asset uploaded successfully to the database")
             conn.close()
             return (True, "")
         except Exception as e:
@@ -519,12 +519,12 @@ class TDA_CoreData:
                 "DownloadRegistry",
             )
             registry = conn.findById(id)
-            logger.info("Deleting %s from %s registry", asset, registry["timespan"])
+            logger.debug("Deleting %s from %s registry", asset, registry["timespan"])
 
             registry["descargas_pendientes"].remove(asset)
             conn.updateById(id, registry)
 
-            logger.info("Delete successfully")
+            logger.debug("Delete successfully")
             conn.close()
             return (True, "")
         except Exception as e:
@@ -544,12 +544,12 @@ class TDA_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
-            logger.info("Finding %s data for %s", interval, asset)
+            logger.debug("Finding %s data for %s", interval, asset)
             fields = {"symbol": asset, "interval": interval}
             res = conn.findByMultipleFields(fields)
             conn.close()
             if res:
-                logger.info("Asset already in the database")
+                logger.debug("Asset already in the database")
                 return (True, "")
             return (False, "")
         except Exception as e:
@@ -569,14 +569,14 @@ class TDA_CoreData:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Twelve Data")
+            logger.debug("Obteniendo configuración de la API Twelve Data")
             config_twelve_data_api = conn.findByField("nombre_api", "twelvedataapi")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             config_twelve_data_api["llamadas_actuales_por_minuto"] = 0
             conn.updateById(config_twelve_data_api["_id"], config_twelve_data_api)
-            logger.info("Configuración actualizada")
+            logger.debug("Configuración actualizada")
             conn.close()
-            logger.info("Llamadas por minuto zeorizadas")
+            logger.debug("Llamadas por minuto zeorizadas")
             return (False, "")
         except Exception as e:
             if conn:
@@ -595,12 +595,12 @@ class TDA_CoreData:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Twelve Data")
+            logger.debug("Obteniendo configuración de la API Twelve Data")
             config_twelve_data_api = conn.findByField("nombre_api", "twelvedataapi")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             config_twelve_data_api["llamadas_actuales_diarias"] = 0
             conn.updateById(config_twelve_data_api["_id"], config_twelve_data_api)
-            logger.info("Llamadas diarias zeorizadas")
+            logger.debug("Llamadas diarias zeorizadas")
             conn.close()
             return (False, "")
         except Exception as e:
@@ -622,7 +622,7 @@ class TDA_CoreData:
                 "CoreData",
             )
 
-            logger.info("Obteniendo configuración de la API Twelve Data")
+            logger.debug("Obteniendo configuración de la API Twelve Data")
             fields = {
                 "$and": [
                     {"symbol": {"$in": assets}},
@@ -634,7 +634,7 @@ class TDA_CoreData:
             )
             conn.close()
             if updatable_stocks:
-                logger.info("Configuración obtenida")
+                logger.debug("Configuración obtenida")
                 return (True, updatable_stocks)
             else:
                 logger.error("No hay activos que actualizar")
@@ -701,13 +701,13 @@ class TDA_CoreData:
             
         # Utiliza la variable 'unit' en lugar de 'days' en timedelta
         if unit == "days":
-            logger.info("La unidad es días")
+            logger.debug("La unidad es días")
             fecha_despues = last_datetime + timedelta(days=time)
         elif unit == "hours":
-            logger.info("La unidad es horas")
+            logger.debug("La unidad es horas")
             fecha_despues = last_datetime + timedelta(hours=time)
         elif unit == "minutes":
-            logger.info("La unidad es minutos")
+            logger.debug("La unidad es minutos")
             fecha_despues = last_datetime + timedelta(minutes=time)
         else:
             # Manejar casos no reconocidos o desconocidos
@@ -718,7 +718,7 @@ class TDA_CoreData:
         check = fecha_despues < fecha_actual
 
         if not check:
-            logger.info("Data does not need to be updated")
+            logger.debug("Data does not need to be updated")
             return (False, "")
 
         if interval == "1day":
@@ -727,38 +727,38 @@ class TDA_CoreData:
         # Comprobamos si esta muy desactualizado y lo actualizamos
         new_actual = fecha_actual - timedelta(days=2)
         if new_actual > fecha_despues:
-            logger.info("Data needs to be updated")
+            logger.debug("Data needs to be updated")
             return (True, asset_data)
 
         # Obtenemos el horario de trading de hoy
         start_datetime, end_datetime = AV_CoreData.__trading_hours()
 
         if start_datetime < fecha_despues < end_datetime:
-            logger.info("Data needs to be updated")
+            logger.debug("Data needs to be updated")
             return (True, asset_data)
 
         while True:
             if unit == "hours":
-                logger.info("La unidad es horas")
+                logger.debug("La unidad es horas")
                 fecha_despues = fecha_despues + timedelta(hours=time)
             elif unit == "minutes":
-                logger.info("La unidad es minutos")
+                logger.debug("La unidad es minutos")
                 fecha_despues = fecha_despues + timedelta(minutes=time)
             else:
                 # Manejar casos no reconocidos o desconocidos
                 logger.error("Unrecognized unit: %s", unit)
                 return (False, "Unrecognized unit")
 
-            logger.info("Comprobamos si nos hemos pasado de la fecha actual")
+            logger.debug("Comprobamos si nos hemos pasado de la fecha actual")
             if fecha_despues > fecha_actual:
-                logger.info("Data does not need to be updated")
+                logger.debug("Data does not need to be updated")
                 return (False, "")
 
             dia_semana = fecha_despues.weekday()
 
-            logger.info("Comprobamos si la fecha está dentro del horario de trading")
+            logger.debug("Comprobamos si la fecha está dentro del horario de trading")
             if start_datetime < fecha_despues < end_datetime and dia_semana < 5:
-                logger.info("Data needs to be updated")
+                logger.debug("Data needs to be updated")
                 return (True, asset_data)
 
 

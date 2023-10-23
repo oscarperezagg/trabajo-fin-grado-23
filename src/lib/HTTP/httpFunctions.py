@@ -43,13 +43,13 @@ class HttpFunctions:
             return (False, "Invalid HTTP method")
 
         if response.status_code == 200:
-            logger.info("Request successful. Status code: %d", response.status_code)
+            logger.debug("Request successful. Status code: %d", response.status_code)
             return (True, response)
         elif response.status_code == 201:
-            logger.info("Request successful. Status code: %d", response.status_code)
+            logger.debug("Request successful. Status code: %d", response.status_code)
             return (True, response)
         elif response.status_code == 204:
-            logger.info("Request successful. Status code: %d", response.status_code)
+            logger.debug("Request successful. Status code: %d", response.status_code)
             return (True, response)
         elif response.status_code == 301:
             logger.warning(

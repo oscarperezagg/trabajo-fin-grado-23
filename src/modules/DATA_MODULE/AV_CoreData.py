@@ -41,7 +41,7 @@ class AV_CoreData:
             deleted_assets = []
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
-                logger.info("Downloading data for %s", timestamp)
+                logger.debug("Downloading data for %s", timestamp)
                 tempConfig = AV_CoreData.__getConfig()
                 all_assets = config["assets"]
                 # Obtenemos los asset que hay que descargar obteniendo los assets para el internvalo
@@ -57,7 +57,7 @@ class AV_CoreData:
                     if asset in deleted_assets:
                         continue
                     logger.info("Downloading %s data", asset)
-                    logger.info(
+                    logger.debug(
                         "Asset %s of %s (%.2f%%)",
                         index + 1,
                         total_assets,
@@ -102,7 +102,7 @@ class AV_CoreData:
 
     def __downloadNoIntradayDataAsset(asset, interval):
         try:
-            logger.info(
+            logger.debug(
                 "Downloading asset data for %s with interval %s", asset, interval
             )
 
@@ -160,7 +160,7 @@ class AV_CoreData:
             upload = AV_CoreData.__uploadAssetDate(data[1])
             if not upload[0]:
                 return upload
-            logger.info(
+            logger.debug(
                 "Data successfully downloaded for %s with interval %s", asset, interval
             )
             return (True, "")
@@ -170,7 +170,7 @@ class AV_CoreData:
 
     def __downloadIntradayAsset(asset, interval, limit):
         try:
-            logger.info(
+            logger.debug(
                 "Downloading asset data for %s with interval %s", asset, interval
             )
 
@@ -201,7 +201,7 @@ class AV_CoreData:
                     # Formato year-month
                     years_and_months.append(str(year) + "-" + str(month).zfill(2))
 
-            logger.info("Llamadas necesarias: %s", len(years_and_months))
+            logger.debug("Llamadas necesarias: %s", len(years_and_months))
 
             # Obtenemos los datos
             for year_month in years_and_months:
@@ -257,7 +257,7 @@ class AV_CoreData:
             upload = AV_CoreData.__uploadAssetDate(finalDataSet)
             if not upload[0]:
                 return upload
-            logger.info(
+            logger.debug(
                 "Data successfully downloaded for %s with interval %s", asset, interval
             )
             return (True, "")
@@ -301,7 +301,7 @@ class AV_CoreData:
                 total_assets = len(assets)
 
                 for index, asset in enumerate(assets):
-                    logger.info(
+                    logger.debug(
                         "Asset %s of %s (%.2f%%)",
                         index + 1,
                         total_assets,
@@ -473,7 +473,7 @@ class AV_CoreData:
 
     def __update_assetDataRange(asset, interval, start_date=None, parseData={}):
         try:
-            logger.info(
+            logger.debug(
                 "Downloading asset data for %s with interval %s", asset, interval
             )
 
@@ -512,7 +512,7 @@ class AV_CoreData:
                 parseData["data"] = temporalDataSet["values"][:-1]
                 parseData["data"].extend(tempData)
 
-            logger.info(
+            logger.debug(
                 "Data successfully downloaded for %s with interval %s", asset, interval
             )
             return (True, parseData, moreData)
@@ -531,7 +531,7 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
-            logger.info("Uploading data for %s", assetData["symbol"])
+            logger.debug("Uploading data for %s", assetData["symbol"])
             assetData["last_modified"] = datetime.now()
             id = assetData["_id"]
             del assetData["_id"]
@@ -563,9 +563,9 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Alpha Vantaje")
+            logger.debug("Obteniendo configuración de la API Alpha Vantaje")
             config_twelve_data_api = conn.findByField("nombre_api", "alphavantage")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             conn.close()
             return config_twelve_data_api
         except Exception as e:
@@ -586,7 +586,7 @@ class AV_CoreData:
 
                 # Comprueba si la diferencia de tiempo es mayor que la duración mínima
                 if current_date.day > last_modification_date.day:
-                    logger.info("La fecha de modificación es de hace un día.")
+                    logger.debug("La fecha de modificación es de hace un día.")
                     AV_CoreData.__DailyCallTOZero()
                     AV_CoreData.__minuteCallTOZero()
                     return (True, "")
@@ -601,7 +601,7 @@ class AV_CoreData:
                 max_duration = timedelta(minutes=2)
 
                 if time_difference > max_duration:
-                    logger.info(
+                    logger.debug(
                         "La fecha de modificación es de hace más de un minuto y medio."
                     )
                     AV_CoreData.__minuteCallTOZero()
@@ -622,7 +622,7 @@ class AV_CoreData:
             )
             if not check:
                 AV_CoreData.__minuteCallTOZero()
-                logger.info("Esperando 60 segundos...")
+                logger.debug("Esperando 60 segundos...")
                 time.sleep(80)
             return (True, "")
         except Exception as e:
@@ -687,13 +687,13 @@ class AV_CoreData:
 
         # Utiliza la variable 'unit' en lugar de 'days' en timedelta
         if unit == "days":
-            logger.info("La unidad es días")
+            logger.debug("La unidad es días")
             fecha_despues = last_datetime + timedelta(days=time)
         elif unit == "hours":
-            logger.info("La unidad es horas")
+            logger.debug("La unidad es horas")
             fecha_despues = last_datetime + timedelta(hours=time)
         elif unit == "minutes":
-            logger.info("La unidad es minutos")
+            logger.debug("La unidad es minutos")
             fecha_despues = last_datetime + timedelta(minutes=time)
         else:
             # Manejar casos no reconocidos o desconocidos
@@ -704,7 +704,7 @@ class AV_CoreData:
         check = fecha_despues < fecha_actual
 
         if not check:
-            logger.info("Data does not need to be updated")
+            logger.debug("Data does not need to be updated")
             return (False, "")
 
         if interval == "1day":
@@ -713,38 +713,38 @@ class AV_CoreData:
         # Comprobamos si esta muy desactualizado y lo actualizamos
         new_actual = fecha_actual - timedelta(days=2)
         if new_actual > fecha_despues:
-            logger.info("Data needs to be updated")
+            logger.debug("Data needs to be updated")
             return (True, asset_data)
 
         # Obtenemos el horario de trading de hoy
         start_datetime, end_datetime = AV_CoreData.__trading_hours()
 
         if start_datetime < fecha_despues < end_datetime:
-            logger.info("Data needs to be updated")
+            logger.debug("Data needs to be updated")
             return (True, asset_data)
 
         while True:
             if unit == "hours":
-                logger.info("La unidad es horas")
+                logger.debug("La unidad es horas")
                 fecha_despues = fecha_despues + timedelta(hours=time)
             elif unit == "minutes":
-                logger.info("La unidad es minutos")
+                logger.debug("La unidad es minutos")
                 fecha_despues = fecha_despues + timedelta(minutes=time)
             else:
                 # Manejar casos no reconocidos o desconocidos
                 logger.error("Unrecognized unit: %s", unit)
                 return (False, "Unrecognized unit")
 
-            logger.info("Comprobamos si nos hemos pasado de la fecha actual")
+            logger.debug("Comprobamos si nos hemos pasado de la fecha actual")
             if fecha_despues > fecha_actual:
-                logger.info("Data does not need to be updated")
+                logger.debug("Data does not need to be updated")
                 return (False, "")
 
             dia_semana = fecha_despues.weekday()
 
-            logger.info("Comprobamos si la fecha está dentro del horario de trading")
+            logger.debug("Comprobamos si la fecha está dentro del horario de trading")
             if start_datetime < fecha_despues < end_datetime and dia_semana < 5:
-                logger.info("Data needs to be updated")
+                logger.debug("Data needs to be updated")
                 return (True, asset_data)
 
     def __obtain_updatable_assets(interval, assets):
@@ -759,7 +759,7 @@ class AV_CoreData:
                 "CoreData",
             )
 
-            logger.info("Obteniendo configuración de la API Alpha Vantaje")
+            logger.debug("Obteniendo configuración de la API Alpha Vantaje")
             fields = {
                 "$and": [
                     {"symbol": {"$in": assets}},
@@ -771,7 +771,7 @@ class AV_CoreData:
             )
             conn.close()
             if updatable_stocks:
-                logger.info("Configuración obtenida")
+                logger.debug("Configuración obtenida")
                 return (True, updatable_stocks)
             else:
                 logger.error("No hay activos que actualizar")
@@ -810,12 +810,12 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
-            logger.info("Finding %s data for %s", interval, asset)
+            logger.debug("Finding %s data for %s", interval, asset)
             fields = {"symbol": asset, "interval": interval}
             res = conn.findByMultipleFields(fields)
             conn.close()
             if res:
-                logger.info("Asset already in the database")
+                logger.debug("Asset already in the database")
                 return (True, "")
             return (False, "")
         except Exception as e:
@@ -835,14 +835,14 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Alpha Vantaje")
+            logger.debug("Obteniendo configuración de la API Alpha Vantaje")
             config_twelve_data_api = conn.findByField("nombre_api", "alphavantage")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             config_twelve_data_api["llamadas_actuales_por_minuto"] = 0
             conn.updateById(config_twelve_data_api["_id"], config_twelve_data_api)
-            logger.info("Configuración actualizada")
+            logger.debug("Configuración actualizada")
             conn.close()
-            logger.info("Llamadas por minuto zeorizadas")
+            logger.debug("Llamadas por minuto zeorizadas")
             return (False, "")
         except Exception as e:
             if conn:
@@ -861,12 +861,12 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Alpha Vantaje")
+            logger.debug("Obteniendo configuración de la API Alpha Vantaje")
             config_twelve_data_api = conn.findByField("nombre_api", "alphavantage")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             config_twelve_data_api["llamadas_actuales_diarias"] = 0
             conn.updateById(config_twelve_data_api["_id"], config_twelve_data_api)
-            logger.info("Llamadas diarias zeorizadas")
+            logger.debug("Llamadas diarias zeorizadas")
             conn.close()
             return (False, "")
         except Exception as e:
@@ -887,16 +887,16 @@ class AV_CoreData:
                 "config",
             )
 
-            logger.info("Obteniendo configuración de la API Alpha Vantaje")
+            logger.debug("Obteniendo configuración de la API Alpha Vantaje")
             config_twelve_data_api = conn.findByField("nombre_api", "alphavantage")
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             config_twelve_data_api["llamadas_actuales_diarias"] += 1
             config_twelve_data_api["llamadas_actuales_por_minuto"] += 1
             config_twelve_data_api["fecha_modificacion"] = datetime.now()
 
             conn.updateById(config_twelve_data_api["_id"], config_twelve_data_api)
 
-            logger.info("Registry updated successfully")
+            logger.debug("Registry updated successfully")
             conn.close()
             return (True, "")
         except Exception as e:
@@ -929,7 +929,7 @@ class AV_CoreData:
             finalDataSet["data"].append(temp)
         elapsed_time = time.time() - start_time
         formatted_time = AV_CoreData.format_time(elapsed_time)
-        logger.info("Tiempo de parseo: %s", formatted_time)
+        logger.debug("Tiempo de parseo: %s", formatted_time)
         return (True, finalDataSet)
 
     def format_time(seconds):
@@ -951,11 +951,11 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
-            logger.info("Uploading data for %s", assetData["symbol"])
+            logger.debug("Uploading data for %s", assetData["symbol"])
             assetData["last_modified"] = datetime.now()
 
             conn.insert(dict(assetData))
-            logger.info("Asset uploaded successfully to the database")
+            logger.debug("Asset uploaded successfully to the database")
             conn.close()
             return (True, "Upload successful")
         except Exception as e:
@@ -1035,10 +1035,10 @@ class AV_CoreData:
             # Convertir el resultado de nuevo en una lista si es necesario
             resultado_lista = list(resultado_set)
             conn.close()
-            logger.info(
+            logger.debug(
                 f"Eliminados {len(assets)-len(resultado_lista)} activos que ya están en la base de datos"
             )
-            logger.info(f"Activos a descargar: {len(resultado_lista)}")
+            logger.debug(f"Activos a descargar: {len(resultado_lista)}")
             return (True, resultado_lista)
         except Exception as e:
             if conn:
@@ -1073,7 +1073,7 @@ class AV_CoreData:
                 return (True, [])
 
             conn.close()
-            logger.info(f"Activos a actualizar: {len(res)}")
+            logger.debug(f"Activos a actualizar: {len(res)}")
             return (True, res)
         except Exception as e:
             if conn:

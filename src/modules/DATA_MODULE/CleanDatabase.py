@@ -106,9 +106,9 @@ class cleanDatabase:
                 DATABASE["dbname"],
                 "config",
             )
-            logger.info("Obteniendo configuración de la API Alpha Vantaje")
+            logger.debug("Obteniendo configuración de la API Alpha Vantaje")
             config_twelve_data_api = conn.findByField("nombre_api", api_name)
-            logger.info("Configuración obtenida")
+            logger.debug("Configuración obtenida")
             conn.close()
             return config_twelve_data_api
         except Exception as e:

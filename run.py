@@ -7,7 +7,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == 'stats':
             justStats = True
-    logger.info(f"justStats: {justStats}")
+    logger.debug(f"justStats: {justStats}")
     iniciar_app(justStats)
 
 

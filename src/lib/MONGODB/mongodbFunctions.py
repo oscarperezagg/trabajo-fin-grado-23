@@ -77,14 +77,14 @@ class MongoDbFunctions:
             collectionname (str): The name of the new collection.
         """
         self.collection = self.db[collectionname]
-        logger.info(f"Changed collection to {collectionname}")
+        logger.debug(f"Changed collection to {collectionname}")
 
     def close(self):
         """
         Close the connection to the MongoDB client.
         """
         self.client.close()
-        logger.info("Database connection closed")
+        logger.debug("Database connection closed")
 
     def insert(self, data, name="default"):
         """
@@ -102,7 +102,7 @@ class MongoDbFunctions:
             self.insertWithFS(data, name)
         else:
             self.collection.insert_one(data)
-            logger.info("Inserted a document into the regular collection.")
+            logger.debug("Inserted a document into the regular collection.")
 
     def insert_many(self, data):
         """
@@ -115,7 +115,7 @@ class MongoDbFunctions:
 
     def insertWithFS(self, data, name):
         file_id = self.fs.put(str(data).encode(), filename=f"{name}.json")
-        logger.info(f"Inserted a large document with file_id: {file_id} into GridFS.")
+        logger.debug(f"Inserted a large document with file_id: {file_id} into GridFS.")
 
     def findById(self, id):
         """
@@ -261,10 +261,10 @@ class MongoDbFunctions:
             id (str): The ObjectId string of the document to update.
             data (dict): The updated data to be applied.
         """
-        logger.info(f"Updating document with id {id}")
+        logger.debug(f"Updating document with id {id}")
         query = {"_id": ObjectId(id)}
         self.collection.update_one(query, {"$set": data})
-        logger.info("Document updated")
+        logger.debug("Document updated")
 
     def updateByField(self, field, value, data, exact_match=True):
         """
@@ -342,7 +342,7 @@ class MongoDbFunctions:
                 query = {field: {"$regex": value, "$options": "i"}}
             
         if exact_match:
-            logger.info(self.collection.delete_one(query))
+            logger.debug(self.collection.delete_one(query))
         else:
             self.collection.delete_many(query)
 
@@ -355,9 +355,9 @@ class MongoDbFunctions:
 
             # Elimina el archivo y sus fragmentos correspondientes
             self.fs.delete(file_info._id)
-            logger.info(f"El archivo '{filename}' ha sido eliminado de GridFS.")
+            logger.debug(f"El archivo '{filename}' ha sido eliminado de GridFS.")
         else:
-            logger.info(f"No se encontró el archivo '{filename}' en GridFS.")
+            logger.debug(f"No se encontró el archivo '{filename}' en GridFS.")
 
     def doAgregate(self, pipeline):
         # Busca el archivo por nombre en GridFS
@@ -379,69 +379,69 @@ if __name__ == "__main__":
         "preproduction",
     )
 
-    logger.info(
+    logger.debug(
         "Find one element in the collection with {'_id': ObjectId('64ecd7917e7233f660583a51')}"
     )
     element = mongo.findById("64ecdcdf67fe2726b022f500")
-    logger.info(element["id"] if element else "No element found")
+    logger.debug(element["id"] if element else "No element found")
 
-    logger.info(
+    logger.debug(
         "Find one element in the collection with {'nombre': 'Juan'} with exact match"
     )
     element = mongo.findByField("nombre", "Juan")
-    logger.info(element["nombre"] if element else "No element found")
+    logger.debug(element["nombre"] if element else "No element found")
 
-    logger.info(
+    logger.debug(
         "Find one element in the collection with {'nombre': 'Juan'} with no exact match"
     )
     element = mongo.findByField("nombre", "Juan", False)
-    logger.info(element["nombre"] if element else "No element found")
+    logger.debug(element["nombre"] if element else "No element found")
 
-    logger.info(
+    logger.debug(
         "Find all elements in the collection with {'nombre': 'Juan'} with no exact match"
     )
     element = mongo.findByField("nombre", "Juan", False, True)
-    logger.info(len(element) if element else "No element found")
+    logger.debug(len(element) if element else "No element found")
 
-    logger.info(
+    logger.debug(
         "Find one document where nombre is Juan Pérez and ciudad contains Madrid"
     )
     fields = {"nombre": "Juan Pérez", "ciudad": "Madrid"}
     element = mongo.findByMultipleFields(fields)
-    logger.info(
+    logger.debug(
         f"{element['nombre']} | {element['ciudad']}" if element else "No element found"
     )
 
-    logger.info("Find one document where nombre is Juan and ciudad contains Madrid")
+    logger.debug("Find one document where nombre is Juan and ciudad contains Madrid")
     fields = {"nombre": "Juan Pérez", "ciudad": "Madrid"}
     element = mongo.findByMultipleFields(fields, exact_match=False)
-    logger.info(
+    logger.debug(
         f"{element['nombre']} | {element['ciudad']}" if element else "No element found"
     )
 
-    logger.info("Find documents where nombre is Juan and ciudad contains Madrid")
+    logger.debug("Find documents where nombre is Juan and ciudad contains Madrid")
     fields = {"nombre": "Juan", "ciudad": "Madrid"}
     elements = mongo.findByMultipleFields(fields, exact_match=False, get_all=True)
     for element in elements:
-        logger.info(
+        logger.debug(
             f"{element['nombre']} | {element['ciudad']}"
             if element
             else "No element found"
         )
 
-    logger.info("Update one document where nombre is Juan Pérez")
+    logger.debug("Update one document where nombre is Juan Pérez")
     mongo.updateByField("nombre", "Juan Pérez", {"ciudad": "Barcelona"})
     mongo.updateByField("nombre", "Juan Pérez", {"ciudad": "Madrid"})
 
-    logger.info("Update documents where nombre contains Juan")
+    logger.debug("Update documents where nombre contains Juan")
     mongo.updateByField("nombre", "Juan", {"ciudad": "Barcelona"}, exact_match=False)
     mongo.updateByField("nombre", "Juan", {"ciudad": "Madrid"}, exact_match=False)
 
-    logger.info("Delete documents where nombre contains Luis Rodríguez")
+    logger.debug("Delete documents where nombre contains Luis Rodríguez")
     input("Press enter to continue...")
     mongo.deleteByField("nombre", "Luis", exact_match=False)
 
-    logger.info("Delete documents where nombre contains Juan")
+    logger.debug("Delete documents where nombre contains Juan")
     input("Press enter to continue...")
     mongo.deleteByField("nombre", "Juan", exact_match=False)
 
