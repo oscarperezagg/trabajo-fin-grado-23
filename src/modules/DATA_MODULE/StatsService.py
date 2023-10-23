@@ -40,7 +40,7 @@ class Stats:
                 logger.debug(stat)
             print("")
         logger.debug("[FIN] - ESTADISTICAS\n")
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
 
 
     def __getDownloadedStocks(api, interval, assets):
