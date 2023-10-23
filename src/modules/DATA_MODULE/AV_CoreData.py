@@ -974,13 +974,19 @@ class AV_CoreData:
 
             config = AV_CoreData.__getConfig()
             # Delete asset from config asset array
-            config["assets"].remove(asset)
-            # Update config
-            id = config["_id"]
-            del config["_id"]
-            conn.updateById(id, dict(config))
-            conn.close()
-            return (True, "")
+            if asset in config["assets"]:
+                config["assets"].remove(asset)
+                # Update config
+                id = config["_id"]
+                del config["_id"]
+                conn.updateById(id, dict(config))
+                conn.close()
+                return (True, "")
+            else:
+                conn.close()
+                logger.warning("When trying to delete assets whas not found!")
+                return (True, "")
+                
         except Exception as e:
             if conn:
                 conn.close()
