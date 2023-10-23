@@ -44,11 +44,7 @@ class cleanDatabase:
                 fields, custom=True, get_all=True, proyeccion=proyeccion
             )
             symbols_array = [item["symbol"] for item in res]
-            if len(symbols_array) == 0:
-                logger.warning("No se encontraron activos en la base de datos")
-            else:
-                logger.critical(f"Eliminando {len(symbols_array)} activos de la base de datos")
-                
+            logger.warning(f"Eliminando {len(symbols_array)} activos de la base de datos")
             for symbol in symbols_array:
                 logger.warning(f"Activo: {symbol}")
 
@@ -79,7 +75,10 @@ class cleanDatabase:
             ]
             logger.warning("Eliminando documentos duplicados")
             documentos_duplicados = conn.doAgregate(pipeline)
-            logger.warning(f"Documentos detectados: {len(documentos_duplicados)}")
+            if len(documentos_duplicados) == 0:
+                logger.warning("No se encontraron documentos duplicados")
+            else:
+                logger.critical(f"Documentos detectados: {len(documentos_duplicados)}")
                         # Elimina los documentos duplicados
             for doc in documentos_duplicados:
                 doc["ids"].pop(0)  # Mantén uno de los documentos duplicados
