@@ -17,7 +17,7 @@ def main(justStats=False):
         # Schedule the task of updating the SPX
         Scheduling.schedule_spx_update('hour', 1)
         # Schedule the task of downloading stocks
-        Scheduling.schedule_stock_download('06:46')
+        Scheduling.schedule_stock_download('09:30')
         # Schedule the task of updating stocks
         # Scheduling.schedule_stocks_update('hour', 1)
     else:

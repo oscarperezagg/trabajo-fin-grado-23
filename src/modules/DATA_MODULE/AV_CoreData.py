@@ -136,8 +136,8 @@ class AV_CoreData:
             data = response[1].json()
 
             if data and data.get("Error Message"):
-                logger.error("Asset not found on Alpha Vantaje API")
-                logger.error(data.get("Error Message"))
+                logger.warning("Asset not found on Alpha Vantaje API")
+                logger.warning("Asset not found on Alpha Vantaje API")
                 error = data.get("Error Message")
                 if error and "Invalid API call" in error:
                     res = AV_CoreData.__deleteAssetFromConfig(asset)
@@ -226,8 +226,8 @@ class AV_CoreData:
 
                 # Comprobamos si hay errores
                 if data and data.get("Error Message"):
-                    logger.error("Asset not found on Alpha Vantaje API")
-                    logger.error(data.get("Error Message"))
+                    logger.warning("Asset not found on Alpha Vantaje API")
+                    logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
                         res = AV_CoreData.__deleteAssetFromConfig(asset)
@@ -410,8 +410,8 @@ class AV_CoreData:
 
                 # Comprobamos si hay errores
                 if data and data.get("Error Message"):
-                    logger.error("Asset not found on Alpha Vantaje API")
-                    logger.error(data.get("Error Message"))
+                    logger.warning("Asset not found on Alpha Vantaje API")
+                    logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
                         res = AV_CoreData.__deleteAssetFromConfig(asset)
