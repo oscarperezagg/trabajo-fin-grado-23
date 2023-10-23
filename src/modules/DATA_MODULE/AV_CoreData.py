@@ -4,7 +4,7 @@ from src.lib import *
 from src.system.secret import *
 from src.system.logging_config import logger
 from requests import Response
-
+from .CleanDatabase import *
 # Configure the logger
 
 trading_hours = {
@@ -38,11 +38,12 @@ class AV_CoreData:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
             timestamps = config["timestamps"].keys()
-            all_assets = config["assets"]
             deleted_assets = []
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
                 logger.info("Downloading data for %s", timestamp)
+                tempConfig = AV_CoreData.__getConfig()
+                all_assets = config["assets"]
                 # Obtenemos los asset que hay que descargar obteniendo los assets para el internvalo
                 res = AV_CoreData.__assestToBeDownloaded(timestamp, all_assets)
                 if not res[0]:
@@ -51,6 +52,8 @@ class AV_CoreData:
                 total_assets = len(assets)
                 # Descargamos los assets
                 for index, asset in enumerate(assets):
+                    cleanDatabase.purgeData()
+
                     if asset in deleted_assets:
                         continue
                     logger.info("Downloading %s data", asset)
@@ -77,6 +80,8 @@ class AV_CoreData:
                         )
 
                     if res[0] and res[1] == "Asset not found on Alpha Vantaje API":
+                        logger.warning("Asset not found on Alpha Vantaje API")
+                        logger.warning("Adding asset to deleted assets list")
                         deleted_assets.append(res[2])
                         continue
 

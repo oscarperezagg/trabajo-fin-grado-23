@@ -17,14 +17,12 @@ def main(justStats=False):
         # Schedule the task of updating the SPX
         Scheduling.schedule_spx_update('hour', 1)
         # Schedule the task of downloading stocks
-        Scheduling.schedule_stock_download('09:30')
+        Scheduling.schedule_stock_download('15:38')
         # Schedule the task of updating stocks
         # Scheduling.schedule_stocks_update('hour', 1)
     else:
         Scheduling.schedule_stats('seconds', 10)
 
-    while True:
-        Scheduling.checkForTask()
     
 def ejecutar_check_for_task():
     while True:

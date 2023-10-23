@@ -359,6 +359,10 @@ class MongoDbFunctions:
         else:
             logger.info(f"No se encontró el archivo '{filename}' en GridFS.")
 
+    def doAgregate(self, pipeline):
+        # Busca el archivo por nombre en GridFS
+        return list(self.collection.aggregate(pipeline))
+
 
 class MongoDbUtil:
     pass
