@@ -298,7 +298,7 @@ class TDA_CoreData:
             )
             if not check:
                 TDA_CoreData.__minuteCallTOZero()
-                logger.debug("Esperando 60 segundos...")
+                logger.warning("Esperando 60 segundos...")
                 time.sleep(80)
             return (True, "")
         except Exception as e:

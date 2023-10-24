@@ -41,7 +41,9 @@ class AV_CoreData:
      
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
-                logger.debug("Downloading data for %s", timestamp)
+                print("")
+                logger.info("Downloading data for %s", timestamp)
+                print("")
                 tempConfig = AV_CoreData.__getConfig()
                 all_assets = config["assets"]
                 # Obtenemos los asset que hay que descargar obteniendo los assets para el internvalo
@@ -605,7 +607,7 @@ class AV_CoreData:
             )
             if not check:
                 AV_CoreData.__minuteCallTOZero()
-                logger.debug("Esperando 60 segundos...")
+                logger.warning("Esperando 60 segundos...")
                 time.sleep(80)
             return (True, "")
         except Exception as e:
