@@ -57,7 +57,7 @@ class CoreStockAPIs:
         Your API key. Claim your free API key here.
         """
         required = ["function", "symbol", "interval", "apikey"]
-        optional = ["adjusted", "extended_hours", "month", "outputsize", "datatype"]
+        optional = ["adjusted", "extended_hours", "month", "outputsize", "datatype","entitlement"]
 
         parameters["function"] = "TIME_SERIES_INTRADAY"
 

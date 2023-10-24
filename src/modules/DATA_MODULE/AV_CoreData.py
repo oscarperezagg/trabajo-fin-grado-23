@@ -108,8 +108,7 @@ class AV_CoreData:
 
             params = {
                 "symbol": asset,
-                "apikey": ALPHA_VANTAGE_API_KEY,
-                "entitlement": "delayed",
+                "apikey": ALPHA_VANTAGE_API_KEY
                 
             }
 
