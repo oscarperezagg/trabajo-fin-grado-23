@@ -38,7 +38,7 @@ class AV_CoreData:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
             timestamps = config["timestamps"].keys()
-            deleted_assets = []
+     
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
                 logger.debug("Downloading data for %s", timestamp)
@@ -54,8 +54,7 @@ class AV_CoreData:
                 for index, asset in enumerate(assets):
                     cleanDatabase.purgeData()
 
-                    if asset in deleted_assets:
-                        continue
+
                     logger.info("Downloading %s data", asset)
                     logger.debug(
                         "Asset %s of %s (%.2f%%)",
@@ -79,11 +78,7 @@ class AV_CoreData:
                             asset, timestamp, LIMIT
                         )
 
-                    if res[0] and res[1] == "Asset not found on Alpha Vantaje API":
-                        logger.warning("Asset not found on Alpha Vantaje API")
-                        logger.warning("Adding asset to deleted assets list")
-                        deleted_assets.append(res[2])
-                        continue
+
 
                     if not res[0] and res[1] == "Llamadas diarias agotadas":
                         return (False, "Llamadas diarias agotadas")
@@ -142,15 +137,9 @@ class AV_CoreData:
 
             if data and data.get("Error Message"):
                 logger.warning("Asset not found on Alpha Vantaje API")
-                logger.warning("Asset not found on Alpha Vantaje API")
                 error = data.get("Error Message")
                 if error and "Invalid API call" in error:
-                    res = AV_CoreData.__deleteAssetFromConfig(asset)
-                    if not res[0]:
-                        logger.error("An error occurred: Asset no deleted")
-                        return res
-                    logger.warning("Asset deleted successfully")
-                    return (True, "Asset not found on Alpha Vantaje API", asset)
+                    return (True, "")
                 else:
                     return (False, data.get("Error Message"))
 
@@ -232,18 +221,17 @@ class AV_CoreData:
                 # Comprobamos si hay errores
                 if data and data.get("Error Message"):
                     logger.warning("Asset not found on Alpha Vantaje API")
-                    logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        res = AV_CoreData.__deleteAssetFromConfig(asset)
-                        if not res[0]:
-                            logger.error("An error occurred: Asset no deleted")
-                            return res
-                        logger.warning("Asset deleted successfully")
-                        return (True, "Asset not found on Alpha Vantaje API", asset)
+                        # Si no se han recabado datos salimos, si no los subimos a la base de datos 
+                        if finalDataSet == {}:
+                            return (True, "", asset)
+                        else:
+                            break
                     else:
                         return (False, data.get("Error Message"))
 
+                    
                 # Parseamos los datos
                 data = AV_CoreData.__parseMonthlyData(data, interval)
                 if not data[0]:
@@ -253,7 +241,8 @@ class AV_CoreData:
                     finalDataSet = data[1]
                 else:
                     finalDataSet["data"].extend(data[1]["data"])
-
+        
+            
             upload = AV_CoreData.__uploadAssetDate(finalDataSet)
             if not upload[0]:
                 return upload
@@ -416,14 +405,8 @@ class AV_CoreData:
                 # Comprobamos si hay errores
                 if data and data.get("Error Message"):
                     logger.warning("Asset not found on Alpha Vantaje API")
-                    logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        res = AV_CoreData.__deleteAssetFromConfig(asset)
-                        if not res[0]:
-                            logger.error("An error occurred: Asset no deleted")
-                            return res
-                        logger.warning("Asset deleted successfully")
                         return (True, "Asset not found on Alpha Vantaje API", asset)
                     else:
                         return (False, data.get("Error Message"))

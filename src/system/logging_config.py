@@ -33,6 +33,7 @@ logger.addHandler(console_handler)
 # Configura el handler para guardar en archivo rotativo diario
 log_file = os.path.join(log_dir, "app.log")
 file_handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, backupCount=7)
+file_handler.setLevel(logging.DEBUG)  # Set the file handler to log at DEBUG level
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
