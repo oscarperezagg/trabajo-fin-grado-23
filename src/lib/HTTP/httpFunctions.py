@@ -1,3 +1,13 @@
+"""
+HTTP Functions Module
+=====================
+This module provides utility functions for making HTTP requests.
+Dependencies:
+    - json
+    - requests
+    - logger from src.system.logging_config
+"""
+
 import json
 from src.system.logging_config import logger
 import requests
@@ -6,21 +16,26 @@ import requests
 
 
 class HttpFunctions:
+    """
+    This class provides static methods to facilitate HTTP GET and POST requests.
+    """
+
     @staticmethod
     def httpRequest(method, url, payload=None, proxy=None, **parameters):
         """
         Send a GET/POST request to the specified URL with optional payload and parameters.
 
         Args:
-           method (str): The Method of the the request.
+           method (str): The HTTP method for the request, either "GET" or "POST".
            url (str): The URL to send the request to.
-           payload (dict, optional): The payload to include in the request.
+           payload (dict, optional): The payload to include in the request if method is "POST".
            proxy (dict, optional): Proxy configuration to use for the request.
            **parameters: Additional parameters to include in the URL.
 
         Returns:
-              tuple: A tuple containing a response message and the response object.
+              tuple: A tuple containing a boolean (True for successful, False otherwise) and the response object.
         """
+
         logger.debug("Sending GET request to URL: %s", url)
 
         if parameters:
@@ -83,6 +98,16 @@ class HttpFunctions:
 
     @staticmethod
     def buildParameterQuery(**kwargs):
+        """
+        Construct a URL query string from the given keyword arguments.
+
+        Args:
+            **kwargs: Key-value pairs to be included in the query string.
+
+        Returns:
+            str: The constructed query string starting with '?'.
+        """
+        ...
         logger.debug("Building parameter query")
         params = []
         for key, value in kwargs.items():
