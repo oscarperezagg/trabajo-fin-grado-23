@@ -1,11 +1,11 @@
 """
-HTTP Functions Module
-=====================
-This module provides utility functions for making HTTP requests.
-Dependencies:
+Módulo de Funciones HTTP
+=========================
+Este módulo ofrece funciones de utilidad para realizar peticiones HTTP.
+Dependencias:
     - json
     - requests
-    - logger from src.system.logging_config
+    - logger de src.system.logging_config
 """
 
 import json
@@ -17,23 +17,23 @@ import requests
 
 class HttpFunctions:
     """
-    This class provides static methods to facilitate HTTP GET and POST requests.
+    Esta clase ofrece métodos estáticos para facilitar las peticiones HTTP GET y POST.
     """
 
     @staticmethod
     def httpRequest(method, url, payload=None, proxy=None, **parameters):
         """
-        Send a GET/POST request to the specified URL with optional payload and parameters.
+        Envía una petición GET/POST a la URL especificada con datos opcionales y parámetros.
 
         Args:
-           method (str): The HTTP method for the request, either "GET" or "POST".
-           url (str): The URL to send the request to.
-           payload (dict, optional): The payload to include in the request if method is "POST".
-           proxy (dict, optional): Proxy configuration to use for the request.
-           **parameters: Additional parameters to include in the URL.
+           metodo (str): El método HTTP para la petición, ya sea "GET" o "POST".
+           url (str): La URL a la cual enviar la petición.
+           datos (dict, opcional): Los datos a incluir en la petición si el método es "POST".
+           proxy (dict, opcional): Configuración del proxy para usar en la petición.
+           **parametros: Parámetros adicionales para incluir en la URL.
 
-        Returns:
-              tuple: A tuple containing a boolean (True for successful, False otherwise) and the response object.
+        Devuelve:
+              tuple: Una tupla que contiene un booleano (Verdadero si es exitoso, Falso en caso contrario) y el objeto de respuesta.
         """
 
         logger.debug("Sending GET request to URL: %s", url)
@@ -99,14 +99,15 @@ class HttpFunctions:
     @staticmethod
     def buildParameterQuery(**kwargs):
         """
-        Construct a URL query string from the given keyword arguments.
+        Construye una cadena de consulta URL a partir de los argumentos de palabras clave dados.
 
         Args:
-            **kwargs: Key-value pairs to be included in the query string.
+            **kwargs: Pares de clave-valor para incluir en la cadena de consulta.
 
-        Returns:
-            str: The constructed query string starting with '?'.
+        Devuelve:
+            str: La cadena de consulta construida empezando con '?'.
         """
+        ...
         ...
         logger.debug("Building parameter query")
         params = []

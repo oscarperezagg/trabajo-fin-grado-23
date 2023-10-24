@@ -13,47 +13,47 @@ import bson
 
 class MongoDbFunctions:
     """
-    A utility class for interacting with MongoDB databases and collections.
+    Una clase de utilidad para interactuar con bases de datos y colecciones de MongoDB.
 
-    This class provides methods to connect to a MongoDB database, perform various database operations,
-    and manage documents within collections.
+    Esta clase proporciona métodos para conectarse a una base de datos MongoDB, realizar 
+    diversas operaciones en la base de datos y gestionar documentos dentro de las colecciones.
 
-    Args:
-        host (str): The MongoDB host address.
-        port (int): The MongoDB port number.
-        username (str): The username for authentication.
-        password (str): The password for authentication.
-        dbname (str): The name of the MongoDB database to connect to.
-        collectionname (str): The name of the collection within the database to interact with.
+        Args:
+            host (str): The MongoDB host address.
+            port (int): The MongoDB port number.
+            username (str): The username for authentication.
+            password (str): The password for authentication.
+            dbname (str): The name of the MongoDB database to connect to.
+            collectionname (str): The name of the collection within the database to interact with.
 
-    Attributes:
-        client: The MongoDB client object.
-        db: The database object.
-        collection: The collection object within the database.
+        Attributes:
+            client: The MongoDB client object.
+            db: The database object.
+            collection: The collection object within the database.
 
-    Usage:
-        mongo = MongoDbFunctions(host, port, username, password, dbname, collectionname)
-        # Use various methods to interact with the MongoDB collection
-        mongo.insert(data)
-        mongo.findByField("nombre", "Juan")
-        mongo.updateByField("nombre", "Juan", {"edad": 31})
-        mongo.deleteByField("nombre", "Juan")
-        mongo.close()
+        Usage:
+            mongo = MongoDbFunctions(host, port, username, password, dbname, collectionname)
+            # Use various methods to interact with the MongoDB collection
+            mongo.insert(data)
+            mongo.findByField("nombre", "Juan")
+            mongo.updateByField("nombre", "Juan", {"edad": 31})
+            mongo.deleteByField("nombre", "Juan")
+            mongo.close()
 
-    Methods:
-        - changeCollection(collectionname): Change the reference to a different collection.
-        - close(): Close the connection to the MongoDB client.
-        - insert(data): Insert a single document into the collection.
-        - insert_many(data): Insert multiple documents into the collection.
-        - findById(id): Find a document by its ObjectId.
-        - findByField(field, value, exact_match=True, get_all=False): Find documents by field and value.
-        - findByMultipleFields(fields, exact_match=True, get_all=False): Find documents by multiple fields.
-        - findByComplexQuery(query, get_all=False): Find documents by a complex query.
-        - updateById(id, data): Update a document by its ObjectId.
-        - updateByField(field, value, data, exact_match=True): Update documents by field and value.
-        - updateByMultipleField(fields, data, exact_match=True): Update documents by multiple fields.
-        - deleteByField(field, value, exact_match=True): Delete documents by field and value.
-        - deleteByMultipleField(fields, exact_match=True): Delete documents by multiple fields.
+        Methods:
+            - changeCollection(collectionname): Change the reference to a different collection.
+            - close(): Close the connection to the MongoDB client.
+            - insert(data): Insert a single document into the collection.
+            - insert_many(data): Insert multiple documents into the collection.
+            - findById(id): Find a document by its ObjectId.
+            - findByField(field, value, exact_match=True, get_all=False): Find documents by field and value.
+            - findByMultipleFields(fields, exact_match=True, get_all=False): Find documents by multiple fields.
+            - findByComplexQuery(query, get_all=False): Find documents by a complex query.
+            - updateById(id, data): Update a document by its ObjectId.
+            - updateByField(field, value, data, exact_match=True): Update documents by field and value.
+            - updateByMultipleField(fields, data, exact_match=True): Update documents by multiple fields.
+            - deleteByField(field, value, exact_match=True): Delete documents by field and value.
+            - deleteByMultipleField(fields, exact_match=True): Delete documents by multiple fields.
 
 
 
@@ -158,7 +158,6 @@ class MongoDbFunctions:
             return list(data)
         return list(self.collection.find(query))
 
-
     def findByField(
         self,
         field,
@@ -203,7 +202,9 @@ class MongoDbFunctions:
                 return data
             return self.collection.find_one(query)
 
-    def findByMultipleFields(self, fields, exact_match=True, get_all=False,custom=False,proyeccion=None):
+    def findByMultipleFields(
+        self, fields, exact_match=True, get_all=False, custom=False, proyeccion=None
+    ):
         """
         Find documents in the collection based on multiple fields and their values.
 
@@ -229,11 +230,11 @@ class MongoDbFunctions:
 
         if get_all:
             if proyeccion:
-                return list(self.collection.find(query,proyeccion))
+                return list(self.collection.find(query, proyeccion))
             return list(self.collection.find(query))
         else:
             if proyeccion:
-                return self.collection.find_one(query,proyeccion)
+                return self.collection.find_one(query, proyeccion)
             return self.collection.find_one(query)
 
     def findByComplexQuery(self, query, get_all=False):
@@ -325,7 +326,9 @@ class MongoDbFunctions:
         else:
             self.collection.delete_many(query)
 
-    def deleteByMultipleField(self, field=None, value=None, exact_match=True,custom=False,fields=None):
+    def deleteByMultipleField(
+        self, field=None, value=None, exact_match=True, custom=False, fields=None
+    ):
         """
         Delete documents in the collection based on multiple fields and their values.
 
@@ -340,7 +343,7 @@ class MongoDbFunctions:
                 query = {field: value}
             else:
                 query = {field: {"$regex": value, "$options": "i"}}
-            
+
         if exact_match:
             logger.debug(self.collection.delete_one(query))
         else:
