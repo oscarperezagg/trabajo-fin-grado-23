@@ -138,7 +138,7 @@ class AV_CoreData:
             data = response[1].json()
 
             if data and data.get("Error Message"):
-                logger.warning("Asset not found on Alpha Vantaje API")
+                logger.error("Asset not found on Alpha Vantaje API")
                 error = data.get("Error Message")
                 if error and "Invalid API call" in error:
                     return (True, "")
@@ -242,7 +242,7 @@ class AV_CoreData:
                     finalDataSet["data"].extend(data[1]["data"])
 
             if finalDataSet == {}:
-                logger.warning("Asset not found on Alpha Vantaje API")
+                logger.error("Asset not found on Alpha Vantaje API")
                 return (True, "")
             
             upload = AV_CoreData.__uploadAssetDate(finalDataSet)
@@ -410,7 +410,7 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        logger.warning(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        logger.error(f"Timestamp not found {year_month} on Alpha Vantaje API")
                         continue
                     else:
                         return (False, data.get("Error Message"))
@@ -426,7 +426,7 @@ class AV_CoreData:
                     finalDataSet["data"].extend(data[1]["data"])
 
             if finalDataSet == {}:
-                logger.warning("New data not found on Alpha Vantaje API")
+                logger.error("New data not found on Alpha Vantaje API")
                 return (True, "")
             
             # Eliminar los datos del mes start_date.month de complete_asset
@@ -462,54 +462,7 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
-
-        try:
-            logger.debug(
-                "Downloading asset data for %s with interval %s", asset, interval
-            )
-
-            params = {
-                "symbol": asset,
-                "interval": interval,
-                "outputsize": "5000",
-                "previous_close": "true",
-                "start_date": start_date,
-                "apikey": TWELVE_DATA_API_KEY,
-            }
-
-            response = CoreData.time_series_intraday(**params)
-
-            if not response[0]:
-                logger.error(
-                    "Failed to download data for %s with interval %s", asset, interval
-                )
-                return (False, response)
-
-            temporalDataSet = response[1].json()
-
-            if temporalDataSet["status"] == "error":
-                logger.error(
-                    "Received an error response: %s",
-                    temporalDataSet.get("message", "Unknown error"),
-                )
-                return response
-
-            moreData = True if len(temporalDataSet["values"]) > 5000 else False
-
-            if parseData == {}:
-                parseData["data"] = temporalDataSet["values"][:-1]
-            else:
-                tempData = parseData["data"]
-                parseData["data"] = temporalDataSet["values"][:-1]
-                parseData["data"].extend(tempData)
-
-            logger.debug(
-                "Data successfully downloaded for %s with interval %s", asset, interval
-            )
-            return (True, parseData, moreData)
-        except Exception as e:
-            logger.error("An error occurred: %s", str(e))
-            return (False, e)
+    
 
     def __updateAssetData(assetData):
         conn = None
