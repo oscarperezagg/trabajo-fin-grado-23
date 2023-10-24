@@ -109,6 +109,7 @@ class AV_CoreData:
             params = {
                 "symbol": asset,
                 "apikey": ALPHA_VANTAGE_API_KEY,
+                "entitlement": "delayed",
                 
             }
 
@@ -461,7 +462,7 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
 
-    def __update_assetDataRange(asset, interval, start_date=None, parseData={}):
+
         try:
             logger.debug(
                 "Downloading asset data for %s with interval %s", asset, interval
