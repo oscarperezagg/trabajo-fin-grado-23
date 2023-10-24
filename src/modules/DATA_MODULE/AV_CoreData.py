@@ -108,7 +108,8 @@ class AV_CoreData:
 
             params = {
                 "symbol": asset,
-                "apikey": ALPHA_VANTAGE_API_KEY
+                "apikey": ALPHA_VANTAGE_API_KEY,
+                "entitlement": "delayed",
                 
             }
 
@@ -137,7 +138,7 @@ class AV_CoreData:
             data = response[1].json()
 
             if data and data.get("Error Message"):
-                logger.error("Asset not found on Alpha Vantaje API")
+                logger.warning("Asset not found on Alpha Vantaje API")
                 error = data.get("Error Message")
                 if error and "Invalid API call" in error:
                     return (True, "")
@@ -241,7 +242,7 @@ class AV_CoreData:
                     finalDataSet["data"].extend(data[1]["data"])
 
             if finalDataSet == {}:
-                logger.error("Asset not found on Alpha Vantaje API")
+                logger.warning("Asset not found on Alpha Vantaje API")
                 return (True, "")
             
             upload = AV_CoreData.__uploadAssetDate(finalDataSet)
@@ -409,7 +410,7 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        logger.error(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        logger.warning(f"Timestamp not found {year_month} on Alpha Vantaje API")
                         continue
                     else:
                         return (False, data.get("Error Message"))

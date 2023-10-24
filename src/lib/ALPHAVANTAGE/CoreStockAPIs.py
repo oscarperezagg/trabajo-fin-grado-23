@@ -94,7 +94,7 @@ class CoreStockAPIs:
         Your API key. Claim your free API key here.
         """
         required = ["function", "symbol", "apikey"]
-        optional = ["outputsize", "datatype"]
+        optional = ["outputsize", "datatype","entitlement"]
 
         parameters["function"] = "TIME_SERIES_DAILY"
 
@@ -164,7 +164,7 @@ class CoreStockAPIs:
         Your API key. Claim your free API key here.
         """
         required = ["function", "symbol", "apikey"]
-        optional = ["datatype"]
+        optional = ["datatype","entitlement"]
 
         parameters["function"] = "TIME_SERIES_WEEKLY"
 
@@ -228,7 +228,7 @@ class CoreStockAPIs:
         Your API key. Claim your free API key here.
         """
         required = ["function", "symbol", "apikey"]
-        optional = ["datatype"]
+        optional = ["datatype","entitlement"]
 
         parameters["function"] = "TIME_SERIES_MONTHLY"
 
