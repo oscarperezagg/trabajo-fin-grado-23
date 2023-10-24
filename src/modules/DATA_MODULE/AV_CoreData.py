@@ -226,7 +226,7 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        logger.warning(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        logger.error(f"Timestamp not found {year_month} on Alpha Vantaje API")
                         continue
                     else:
                         return (False, data.get("Error Message"))
@@ -410,7 +410,7 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        logger.warning(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        logger.error(f"Timestamp not found {year_month} on Alpha Vantaje API")
                         continue
                     else:
                         return (False, data.get("Error Message"))
