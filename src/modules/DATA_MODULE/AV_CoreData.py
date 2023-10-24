@@ -5,6 +5,7 @@ from src.system.secret import *
 from src.system.logging_config import logger
 from requests import Response
 from .CleanDatabase import *
+
 # Configure the logger
 
 trading_hours = {
@@ -38,7 +39,7 @@ class AV_CoreData:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
             timestamps = config["timestamps"].keys()
-     
+
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
                 print("")
@@ -55,7 +56,6 @@ class AV_CoreData:
                 # Descargamos los assets
                 for index, asset in enumerate(assets):
                     cleanDatabase.purgeData()
-
 
                     logger.info("Downloading %s data", asset)
                     logger.debug(
@@ -79,8 +79,6 @@ class AV_CoreData:
                         res = AV_CoreData.__downloadIntradayAsset(
                             asset, timestamp, LIMIT
                         )
-
-
 
                     if not res[0] and res[1] == "Llamadas diarias agotadas":
                         return (False, "Llamadas diarias agotadas")
@@ -111,6 +109,7 @@ class AV_CoreData:
             params = {
                 "symbol": asset,
                 "apikey": ALPHA_VANTAGE_API_KEY,
+                
             }
 
             if interval == "1month":
@@ -174,6 +173,7 @@ class AV_CoreData:
                 "interval": interval,
                 "month": "",
                 "outputsize": "full",
+                "entitlement": "delayed",
             }
 
             # Obtenemos el mes actual
@@ -225,16 +225,12 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        # Si no se han recabado datos salimos, si no los subimos a la base de datos 
-                        if finalDataSet == {}:
-                            return (True, "", asset)
-                        else:
-                            break
+                        logger.warning(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        continue
                     else:
                         return (False, data.get("Error Message"))
 
-                    
-                # Parseamos los datos
+                    # Parseamos los datos
                 data = AV_CoreData.__parseMonthlyData(data, interval)
                 if not data[0]:
                     return data
@@ -243,7 +239,10 @@ class AV_CoreData:
                     finalDataSet = data[1]
                 else:
                     finalDataSet["data"].extend(data[1]["data"])
-        
+
+            if finalDataSet == {}:
+                logger.warning("Asset not found on Alpha Vantaje API")
+                return (True, "")
             
             upload = AV_CoreData.__uploadAssetDate(finalDataSet)
             if not upload[0]:
@@ -377,6 +376,7 @@ class AV_CoreData:
                 "interval": interval,
                 "month": "",
                 "outputsize": "full",
+                "entitlement": "delayed",
             }
 
             for year_month in years_and_months:
@@ -409,7 +409,8 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        return (True, "Asset not found on Alpha Vantaje API", asset)
+                        logger.warning(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        continue
                     else:
                         return (False, data.get("Error Message"))
 
@@ -423,6 +424,10 @@ class AV_CoreData:
                 else:
                     finalDataSet["data"].extend(data[1]["data"])
 
+            if finalDataSet == {}:
+                logger.warning("New data not found on Alpha Vantaje API")
+                return (True, "")
+            
             # Eliminar los datos del mes start_date.month de complete_asset
             index = 0
             for i in range(len(complete_asset["data"])):
@@ -529,9 +534,8 @@ class AV_CoreData:
                 conn.close()
             logger.error("An error occurred: %s", str(e))
             return (False, e)
-        
-    ######################
 
+    ######################
 
     ######################
     ### SUPORT METHODS ###
@@ -976,7 +980,7 @@ class AV_CoreData:
                 conn.close()
                 logger.warning("When trying to delete assets whas not found!")
                 return (True, "")
-                
+
         except Exception as e:
             if conn:
                 conn.close()
