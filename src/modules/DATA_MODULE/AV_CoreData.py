@@ -13,7 +13,7 @@ trading_hours = {
     "end": "23:00",
 }
 
-LIMIT = 2020
+LIMIT = 2018
 
 
 class AV_CoreData:
