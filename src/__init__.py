@@ -14,6 +14,7 @@ def main(
     DownloadStocks=False,
     UpdateStocks=False,
     UpdateSPX=False,
+    companyOverview=False
 ):
     # Purge data
     cleanDatabase.purgeData()
@@ -30,6 +31,8 @@ def main(
         TDA_CoreData.downloadAsset()
     elif UpdateSPX:
         TDA_CoreData.updateAssets()
+    elif companyOverview:
+        AV_FundamentalData.getCompanyOverview()
     else:
         logger.info("Starting application")
         # Schedule the task of downloading the SPX
@@ -40,6 +43,8 @@ def main(
         Scheduling.schedule_stock_download("11:00")
         # Schedule the task of updating stocks
         Scheduling.schedule_stocks_update("hour", 1)
+        # Schedule the task of getting company overview
+        # Scheduling.schedule_company_overview("hour", 1)
 
 
 def ejecutar_check_for_task():
@@ -54,11 +59,12 @@ def iniciar_app(
     DownloadStocks=False,
     UpdateStocks=False,
     UpdateSPX=False,
+    companyOverview=False
 ):
     print("")
     logger.debug("Crear un hilo para la lógica de la aplicación")
     app_thread = threading.Thread(
-        target=main, args=(stats, DownloadSPX, DownloadStocks, UpdateStocks, UpdateSPX)
+        target=main, args=(stats, DownloadSPX, DownloadStocks, UpdateStocks, UpdateSPX,companyOverview)
     )
     app_thread.start()  # Iniciar el hilo de la aplicación
     print("")
