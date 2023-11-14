@@ -1,5 +1,6 @@
 import logging
 import threading
+import os
 
 from src.modules import *
 from src.modules.DATA_MODULE import *
@@ -70,6 +71,30 @@ def iniciar_app(
 
 def setup_app(host="127.0.0.1", port="27017", user=None, password=None):
     # Ask for host and port
+    
+    # Comprorba si el archivo dentro secret.py dentro de la carpeta system existe
+    # Obtiene la ruta al directorio actual (donde se encuentra el archivo en ejecución)
+    directorio_actual = os.path.dirname(os.path.abspath(__file__))
+
+    # Construye la ruta completa al archivo secret.py dentro de la carpeta "system"
+    ruta_archivo_secret = os.path.join(directorio_actual, "system", "secret.py")
+
+    # Verifica si el archivo existe
+    if not os.path.exists(ruta_archivo_secret):
+        
+        msg = """
+        
+Asegurese de que el archivo secret.py exista. Puede encontrar un ejemplo 
+(secret_template.py) en la misma carpeta donde secret.py debería guardarse.
+
+Configure bien los siguiente campos:
+
+- ALPHA_VANTAGE_API_KEY
+- TWELVE_DATA_API_KEY
+- DATABASE
+        """
+        logger.error(msg)
+        return
 
     check = input("Want to change default host = 127.0.0.1 and port = 27001 (y/n): ")
     if check == "y":
