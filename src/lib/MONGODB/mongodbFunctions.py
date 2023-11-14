@@ -15,7 +15,7 @@ class MongoDbFunctions:
     """
     Una clase de utilidad para interactuar con bases de datos y colecciones de MongoDB.
 
-    Esta clase proporciona métodos para conectarse a una base de datos MongoDB, realizar 
+    Esta clase proporciona métodos para conectarse a una base de datos MongoDB, realizar
     diversas operaciones en la base de datos y gestionar documentos dentro de las colecciones.
 
         Args:
@@ -59,15 +59,64 @@ class MongoDbFunctions:
 
     """
 
-    def __init__(self, host, port, username, password, dbname, collectionname=None):
+    def __init__(
+        self, host, port, username, password, dbname=None, collectionname=None
+    ):
         if not username or not password:
             self.client = MongoClient(host, int(port))
         else:
             self.client = MongoClient(host, port, username=username, password=password)
-        self.db = self.client[dbname]
-        self.fs = GridFS(self.db)
+        if dbname:
+            self.db = self.client[dbname]
+            self.fs = GridFS(self.db)
+        else:
+            self.db = None
         if collectionname:
             self.collection = self.db[collectionname]
+
+    def close(self):
+        """
+        Close the connection to the MongoDB client.
+        """
+        self.client.close()
+        logger.debug("Database connection closed")
+
+    
+
+    def setDatabase(self, dbname):
+        # Obtén la referencia a la colección en la base de datos
+        self.db = self.client[dbname]
+        self.fs = GridFS(self.db)
+        
+    def createCollections(self, collections):
+        for collection_name in collections:
+            logger.debug(f"Trying to create collection {collection_name}.")
+            # Verifica si la colección ya existe en la base de datos
+            if collection_name in self.db.list_collection_names():
+                logger.debug(f"Collection {collection_name} already exists.")
+                continue
+            
+            # Obtiene la referencia a la colección en la base de datos
+            collection = self.db[collection_name]
+            # Inserta el documento en la colección para que se cree oficialmente
+            insert_result = collection.insert_one({"clave": "valor"})
+            # Imprime el ID del documento recién insertado
+            documento_id = insert_result.inserted_id
+            collection.delete_one({"_id": documento_id})
+            logger.debug(f"Collection {collection} created.")
+            
+    def defaultDocs(self, default_docs):
+        for collection_name,default_document in default_docs.items():
+            # Verifica si la colección ya existe en la base de datos
+            collection = self.db[collection_name]
+
+            # Verifica si la colección contiene al menos un documento
+            if collection.count_documents({}) > 0:
+                return
+            
+            # Inserta el documento en la colección para que se cree oficialmente
+            collection.insert_one(default_document)
+            logger.debug(f"Default document for collection {collection_name} created.")
 
     def changeCollection(self, collectionname):
         """
@@ -78,13 +127,6 @@ class MongoDbFunctions:
         """
         self.collection = self.db[collectionname]
         logger.debug(f"Changed collection to {collectionname}")
-
-    def close(self):
-        """
-        Close the connection to the MongoDB client.
-        """
-        self.client.close()
-        logger.debug("Database connection closed")
 
     def insert(self, data, name="default"):
         """
