@@ -19,6 +19,13 @@ LIMIT = 2020
 
 
 class AV_FundamentalData:
+    def all_methods():
+        AV_FundamentalData.getCompanyOverview()
+        AV_FundamentalData.getIncomeStatement()
+        AV_FundamentalData.getBalanceSheet()
+        AV_FundamentalData.getCashFlow()
+        AV_FundamentalData.getEarnings()
+
     def getCompanyOverview():
         """
         Get the company overview from the API. This functions should be executed once a day.
@@ -94,6 +101,8 @@ class AV_FundamentalData:
                     logger.error(f"An error occurred: {str(e)}")
                     continue
             n += 1
+
+        logger.info("Company overview downloaded")
 
     def getIncomeStatement():
         """
@@ -246,7 +255,9 @@ class AV_FundamentalData:
                         logger.error("An error occurred: %s", response[1])
                 except Exception as e:
                     logger.error(f"An error occurred: {str(e)}")
-        n += 1
+            n += 1
+
+        logger.info("Income statement downloaded")
 
     def getBalanceSheet():
         """
@@ -397,7 +408,9 @@ class AV_FundamentalData:
                         logger.error("An error occurred: %s", response[1])
                 except Exception as e:
                     logger.error(f"An error occurred: {str(e)}")
-        n += 1
+            n += 1
+
+        logger.info("Balance sheet downloaded")
 
     def getCashFlow():
         """
@@ -544,7 +557,9 @@ class AV_FundamentalData:
                         logger.error("An error occurred: %s", response[1])
                 except Exception as e:
                     logger.error(f"An error occurred: {str(e)}")
-        n += 1
+            n += 1
+
+        logger.info("Cash flow downloaded")
 
     def getEarnings():
         """
@@ -691,7 +706,9 @@ class AV_FundamentalData:
                         logger.error("An error occurred: %s", response[1])
                 except Exception as e:
                     logger.error(f"An error occurred: {str(e)}")
-        n += 1
+            n += 1
+
+        logger.info("Earnings downloaded")
 
     ###############
     #   SUPPORT   #

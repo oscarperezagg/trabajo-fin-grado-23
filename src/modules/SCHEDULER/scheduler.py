@@ -45,6 +45,12 @@ class Scheduling:
         elif option == "seconds":
             schedule.every(time).seconds.do(Stats.get_stats)
         logger.info(f"Scheduled stats every {time} {option}")
+        
+    @staticmethod
+    def schedule_download_fundamental_data(time):
+        logger.info("Scheduling Fundamental Data donwload for " + time)
+        schedule.every().day.at(time).do(AV_FundamentalData.all_methods)
+        logger.info("Scheduled Fundamental Data donwload for " + time)
 
     @staticmethod
     def checkForTask():

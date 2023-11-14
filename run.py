@@ -4,15 +4,25 @@ from src.system.logging_config import logger
 
 options = ["stats", "downloadSPX", "downloadStocks", "updateStocks", "updateSPX"]
 main_text = """Si el programa se ejecuta sin argumentos, se ejecutará en modo normal.\n
-Las opciones disponibles son:\n
+Opciones generales:
+
     - stats: Muestra las métricas sobre la base de datos
+    - setup: Configura la aplicación
+
+Opciones de descarga de históricos:
+
     - downloadSPX: Descarga el histórico del SPX
     - downloadStocks: Descarga el histórico de las acciones del SPX
     - updateStocks: Actualiza el histórico de las acciones del SPX
     - updateSPX: Actualiza el histórico del SPX
+
+Options de descarga de datos fundamentales:
+
     - companyOverview: Descargsa la información de las acciones del SPX
     - IncomeStatement: Descarga el estado de resultados de las acciones del SPX
-    - setup: Configura la aplicación
+    - BalanceSheet: Descarga el balance de las acciones del SPX
+    - CashFlow: Descarga el flujo de caja de las acciones del SPX
+    - Earnings: Descarga las ganancias de las acciones del SPX
     
 Selecciona una opción (pulsa enter para ejecutar en modo normal): """
 some_art = """ _____ _____ ____   ____  _____      ____  _  _   
@@ -50,6 +60,12 @@ if __name__ == "__main__":
             iniciar_app(companyOverview=True)
         elif selected_option == "IncomeStatement":
             iniciar_app(IncomeStatement=True)
+        elif selected_option == "BalanceSheet":
+            iniciar_app(BalanceSheet=True)
+        elif selected_option == "CashFlow":
+            iniciar_app(CashFlow=True)
+        elif selected_option == "Earnings":
+            iniciar_app(Earnings=True)
         else:
             print(f"Valid options are: {options}")
     except Exception as e:

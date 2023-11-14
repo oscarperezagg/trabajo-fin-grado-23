@@ -15,7 +15,10 @@ def main(
     UpdateStocks=False,
     UpdateSPX=False,
     companyOverview=False,
-    IncomeStatement=False
+    IncomeStatement=False,
+    BalanceSheet=False,
+    CashFlow=False,
+    Earnings=False,
 ):
     # Purge data
     cleanDatabase.purgeData()
@@ -36,6 +39,12 @@ def main(
         AV_FundamentalData.getCompanyOverview()
     elif IncomeStatement:
         AV_FundamentalData.getIncomeStatement()
+    elif BalanceSheet:
+        AV_FundamentalData.getBalanceSheet()
+    elif CashFlow:
+        AV_FundamentalData.getCashFlow()
+    elif Earnings:
+        AV_FundamentalData.getEarnings()
     else:
         logger.info("Starting application")
         # Schedule the task of downloading the SPX
@@ -47,7 +56,7 @@ def main(
         # Schedule the task of updating stocks
         Scheduling.schedule_stocks_update("hour", 1)
         # Schedule the task of getting company overview
-        # Scheduling.schedule_company_overview("hour", 1)
+        Scheduling.schedule_download_fundamental_data("hour", 1)
 
 
 def ejecutar_check_for_task():
@@ -63,12 +72,27 @@ def iniciar_app(
     UpdateStocks=False,
     UpdateSPX=False,
     companyOverview=False,
-    IncomeStatement=False
+    IncomeStatement=False,
+    BalanceSheet=False,
+    CashFlow=False,
+    Earnings=False,
 ):
     print("")
     logger.debug("Crear un hilo para la lógica de la aplicación")
     app_thread = threading.Thread(
-        target=main, args=(stats, DownloadSPX, DownloadStocks, UpdateStocks, UpdateSPX,companyOverview,IncomeStatement)
+        target=main,
+        args=(
+            stats,
+            DownloadSPX,
+            DownloadStocks,
+            UpdateStocks,
+            UpdateSPX,
+            companyOverview,
+            IncomeStatement,
+            BalanceSheet,
+            CashFlow,
+            Earnings,
+        ),
     )
     app_thread.start()  # Iniciar el hilo de la aplicación
     print("")
@@ -79,10 +103,11 @@ def iniciar_app(
     check_for_task_thread.start()  # Iniciar el hilo de Scheduling.checkForTask()
     print("")
 
+
 def setup_app(host="127.0.0.1", port="27017", user=None, password=None):
     # Ask for host and port
-    
-    # Comprorba si el archivo dentro secret.py dentro de la carpeta system existe
+
+    # Comprorba si el archivo dentro secret.py dentro de la carpeta system existe
     # Obtiene la ruta al directorio actual (donde se encuentra el archivo en ejecución)
     directorio_actual = os.path.dirname(os.path.abspath(__file__))
 
@@ -91,7 +116,6 @@ def setup_app(host="127.0.0.1", port="27017", user=None, password=None):
 
     # Verifica si el archivo existe
     if not os.path.exists(ruta_archivo_secret):
-        
         msg = """
         
 Asegurese de que el archivo secret.py exista. Puede encontrar un ejemplo 
@@ -117,7 +141,6 @@ Configure bien los siguiente campos:
         user = input("User: ")
         password = input("Password: ")
 
-        
     conn = MongoDbFunctions(host, port, user, password)
     # Comprobamos si la base de datos existe y si no creamos
     conn.setDatabase(DATABASE["dbname"])
@@ -125,4 +148,3 @@ Configure bien los siguiente campos:
     conn.createCollections(COLLECTIONS)
     # Creamos los documentos de prueba
     conn.defaultDocs(TEST_DOCS)
-    
