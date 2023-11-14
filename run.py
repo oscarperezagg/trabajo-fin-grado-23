@@ -15,25 +15,29 @@ some_art = """ _____ _____ ____   ____  _____      ____  _  _
 
 if __name__ == "__main__":
     # Get system arguments
-    print("\033c")
+    try:
+        print("\033c")
 
-    print(some_art)
+        print(some_art)
 
-    args = sys.argv
+        args = sys.argv
 
-    if len(args) == 1:
-        iniciar_app()
-    elif args[1] == "setup":
-        setup_app()
-    elif args[1] == "stats":
-        iniciar_app(stats=True)
-    elif args[1] == "downloadSPX":
-        iniciar_app(DownloadSPX=True)
-    elif args[1] == "downloadStocks":
-        iniciar_app(DownloadStocks=True)
-    elif args[1] == "updateStocks":
-        iniciar_app(UpdateStocks=True)
-    elif args[1] == "updateSPX":
-        iniciar_app(UpdateSPX=True)
-    else:
-        print(f"Valid options are: {options}")
+        if len(args) == 1:
+            iniciar_app()
+        elif args[1] == "setup":
+            setup_app()
+        elif args[1] == "stats":
+            iniciar_app(stats=True)
+        elif args[1] == "downloadSPX":
+            iniciar_app(DownloadSPX=True)
+        elif args[1] == "downloadStocks":
+            iniciar_app(DownloadStocks=True)
+        elif args[1] == "updateStocks":
+            iniciar_app(UpdateStocks=True)
+        elif args[1] == "updateSPX":
+            iniciar_app(UpdateSPX=True)
+        else:
+            print(f"Valid options are: {options}")
+    except Exception as e:
+        logger.critical("Fatal error occurred: %s", str(e))
+    
