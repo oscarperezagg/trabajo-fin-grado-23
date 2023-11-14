@@ -26,15 +26,13 @@ class Stats:
                     return
                 already_downloaded = len(res[1])
 
+                tempStringForStat = f"-- Descargados: {already_downloaded} / {total_assets} ({round(already_downloaded*100/total_assets, 2)}%)"
+            
                 tempStats.append(
-                    f"|   Intervalo {interval} -- Descargados: {already_downloaded} / {total_assets} ({round(already_downloaded*100/total_assets, 2)}%)"
+                    f"|   Intervalo {interval}{' '*(8-len(interval))} {tempStringForStat} "
                 )
             stats[api] = tempStats
-            
-            
-            
-            
-            
+
         data_collections = [
             "CompanyOverview",
             "IncomeStatement",
@@ -52,31 +50,33 @@ class Stats:
                 DATABASE["password"],
                 DATABASE["dbname"],
                 data_collection,
-            ) 
+            )
             all_data = conn.collection.count_documents({})
             FundamentalDataStats[data_collection] = all_data
-            
-        
+
         logger.setLevel(logging.DEBUG)
         # Hacer clear de la consola
         print("\033c")
         print("")
         logger.debug("[INICO] - ESTADISTICAS DE DESCARGA\n")
         for api in api_names[1]:
-            logger.debug("ESTADISTICAS PARA LAS APIS: %s", api)
+            logger.debug("ESTADISTICAS PARA LAS APIS: %s\n", api)
             for stat in stats[api]:
                 logger.debug(stat)
             print("")
         logger.debug("[FIN] - ESTADISTICAS\n")
 
         logger.debug("[INICO] - ESTADISTICAS DE DATOS FUNDAMNETALES\n")
-         
+
         # Obtener las estadísticas de los datos fundamentales
-        
-        
+
         for data_collection in data_collections:
-            percentil = round(FundamentalDataStats[data_collection]*100/g_total_assets,2)
-            logger.debug(f"|   TIPO DE DATO: {data_collection} - {FundamentalDataStats[data_collection]}/{g_total_assets} ({percentil}%)")
+            percentil = round(
+                FundamentalDataStats[data_collection] * 100 / g_total_assets, 2
+            )
+            logger.debug(
+                f"|   TIPO DE DATO: {data_collection} - {FundamentalDataStats[data_collection]}/{g_total_assets} ({percentil}%)"
+            )
         print()
         logger.debug("[FIN] - ESTADISTICAS\n")
 

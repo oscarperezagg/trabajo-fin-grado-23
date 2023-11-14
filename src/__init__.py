@@ -37,15 +37,15 @@ def main(mode=None):
     else:
         logger.info("Starting application")
         # Schedule the task of downloading the SPX
-        Scheduling.schedule_spx_download("10:00")
+        Scheduling.schedule_spx_download("7:00")
         # Schedule the task of updating the SPX
         Scheduling.schedule_spx_update("hour", 1)
         # Schedule the task of downloading stocks
-        Scheduling.schedule_stock_download("11:00")
+        Scheduling.schedule_stock_download("8:00")
         # Schedule the task of updating stocks
         Scheduling.schedule_stocks_update("hour", 1)
         # Schedule the task of getting company overview
-        Scheduling.schedule_download_fundamental_data("hour", 1)
+        Scheduling.schedule_download_fundamental_data("6:00")
 
 
 def ejecutar_check_for_task():
