@@ -8,42 +8,31 @@ from src.lib import *
 from src.system.secret import *
 
 
-def main(
-    stats=False,
-    DownloadSPX=False,
-    DownloadStocks=False,
-    UpdateStocks=False,
-    UpdateSPX=False,
-    companyOverview=False,
-    IncomeStatement=False,
-    BalanceSheet=False,
-    CashFlow=False,
-    Earnings=False,
-):
+def main(mode=None):
     # Purge data
     cleanDatabase.purgeData()
     # Show stats
     logger.setLevel(logging.INFO)
     # Temporal
-    if stats:
+    if mode == "stats":
         Scheduling.schedule_stats("seconds", 10)
-    elif DownloadStocks:
+    elif mode == "DownloadStocks":
         AV_CoreData.downloadAsset()
-    elif UpdateStocks:
+    elif mode == "UpdateStocks":
         AV_CoreData.updateAssets()
-    elif DownloadSPX:
+    elif mode == "DownloadSPX":
         TDA_CoreData.downloadAsset()
-    elif UpdateSPX:
+    elif mode == "UpdateSPX":
         TDA_CoreData.updateAssets()
-    elif companyOverview:
+    elif mode == "companyOverview":
         AV_FundamentalData.getCompanyOverview()
-    elif IncomeStatement:
+    elif mode == "IncomeStatement":
         AV_FundamentalData.getIncomeStatement()
-    elif BalanceSheet:
+    elif mode == "BalanceSheet":
         AV_FundamentalData.getBalanceSheet()
-    elif CashFlow:
+    elif mode == "CashFlow":
         AV_FundamentalData.getCashFlow()
-    elif Earnings:
+    elif mode == "Earnings":
         AV_FundamentalData.getEarnings()
     else:
         logger.info("Starting application")
@@ -65,35 +54,14 @@ def ejecutar_check_for_task():
         time.sleep(1)  # Añade un pequeño retraso para evitar un uso excesivo de CPU
 
 
-def iniciar_app(
-    stats=False,
-    DownloadSPX=False,
-    DownloadStocks=False,
-    UpdateStocks=False,
-    UpdateSPX=False,
-    companyOverview=False,
-    IncomeStatement=False,
-    BalanceSheet=False,
-    CashFlow=False,
-    Earnings=False,
-):
+def iniciar_app(mode=None):
     print("")
     logger.debug("Crear un hilo para la lógica de la aplicación")
     app_thread = threading.Thread(
         target=main,
-        args=(
-            stats,
-            DownloadSPX,
-            DownloadStocks,
-            UpdateStocks,
-            UpdateSPX,
-            companyOverview,
-            IncomeStatement,
-            BalanceSheet,
-            CashFlow,
-            Earnings,
-        ),
+        args=(mode,),
     )
+
     app_thread.start()  # Iniciar el hilo de la aplicación
     print("")
     logger.debug(
@@ -140,7 +108,7 @@ Configure bien los siguiente campos:
     if check == "y":
         user = input("User: ")
         password = input("Password: ")
-
+    logger.info("Configurando la aplicación")
     conn = MongoDbFunctions(host, port, user, password)
     # Comprobamos si la base de datos existe y si no creamos
     conn.setDatabase(DATABASE["dbname"])
@@ -148,3 +116,4 @@ Configure bien los siguiente campos:
     conn.createCollections(COLLECTIONS)
     # Creamos los documentos de prueba
     conn.defaultDocs(TEST_DOCS)
+    logger.info("Configuración completada")

@@ -2,7 +2,7 @@ import sys
 from src import iniciar_app, setup_app
 from src.system.logging_config import logger
 
-options = ["stats", "downloadSPX", "downloadStocks", "updateStocks", "updateSPX"]
+
 main_text = """Si el programa se ejecuta sin argumentos, se ejecutará en modo normal.\n
 Opciones generales:
 
@@ -34,6 +34,24 @@ some_art = """ _____ _____ ____   ____  _____      ____  _  _
   
   Made by: Óscar Pérez Arruti\n\n"""
 
+
+# Define un diccionario de opciones y las funciones asociadas
+options = {
+    "": iniciar_app,
+    "setup": setup_app,
+    "stats": lambda: iniciar_app(mode="stats"),
+    "downloadSPX": lambda: iniciar_app(mode="DownloadSPX"),
+    "downloadStocks": lambda: iniciar_app(mode="DownloadStocks"),
+    "updateStocks": lambda: iniciar_app(mode="UpdateStocks"),
+    "updateSPX": lambda: iniciar_app(mode="UpdateSPX"),
+    "companyOverview": lambda: iniciar_app(mode="companyOverview"),
+    "IncomeStatement": lambda: iniciar_app(mode="IncomeStatement"),
+    "BalanceSheet": lambda: iniciar_app(mode="BalanceSheet"),
+    "CashFlow": lambda: iniciar_app(mode="CashFlow"),
+    "Earnings": lambda: iniciar_app(mode="Earnings"),
+}
+
+
 if __name__ == "__main__":
     # Get system arguments
     try:
@@ -42,32 +60,11 @@ if __name__ == "__main__":
 
         selected_option = input(main_text)
         print("")
-        if selected_option == "":
-            iniciar_app()
-        elif selected_option == "setup":
-            setup_app()
-        elif selected_option == "stats":
-            iniciar_app(stats=True)
-        elif selected_option == "downloadSPX":
-            iniciar_app(DownloadSPX=True)
-        elif selected_option == "downloadStocks":
-            iniciar_app(DownloadStocks=True)
-        elif selected_option == "updateStocks":
-            iniciar_app(UpdateStocks=True)
-        elif selected_option == "updateSPX":
-            iniciar_app(UpdateSPX=True)
-        elif selected_option == "companyOverview":
-            iniciar_app(companyOverview=True)
-        elif selected_option == "IncomeStatement":
-            iniciar_app(IncomeStatement=True)
-        elif selected_option == "BalanceSheet":
-            iniciar_app(BalanceSheet=True)
-        elif selected_option == "CashFlow":
-            iniciar_app(CashFlow=True)
-        elif selected_option == "Earnings":
-            iniciar_app(Earnings=True)
+
+        if selected_option in options:
+            options[selected_option]()
         else:
-            print(f"Valid options are: {options}")
+            print(f"Valid options are: {list(options.keys())}")
+
     except Exception as e:
         logger.critical("Fatal error occurred: %s", str(e))
-    
