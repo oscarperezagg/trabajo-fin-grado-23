@@ -11,6 +11,7 @@ Las opciones disponibles son:\n
     - updateStocks: Actualiza el histórico de las acciones del SPX
     - updateSPX: Actualiza el histórico del SPX
     - companyOverview: Descargsa la información de las acciones del SPX
+    - IncomeStatement: Descarga el estado de resultados de las acciones del SPX
     - setup: Configura la aplicación
     
 Selecciona una opción (pulsa enter para ejecutar en modo normal): """
@@ -47,6 +48,8 @@ if __name__ == "__main__":
             iniciar_app(UpdateSPX=True)
         elif selected_option == "companyOverview":
             iniciar_app(companyOverview=True)
+        elif selected_option == "IncomeStatement":
+            iniciar_app(IncomeStatement=True)
         else:
             print(f"Valid options are: {options}")
     except Exception as e:
