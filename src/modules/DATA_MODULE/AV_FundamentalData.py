@@ -606,7 +606,7 @@ class AV_FundamentalData:
                         DATABASE["username"],
                         DATABASE["password"],
                         DATABASE["dbname"],
-                        "CashFlow",
+                        "Earnings",
                     )
 
                     logger.info(f"Getting Earnings for {asset}")
