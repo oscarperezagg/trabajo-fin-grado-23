@@ -7,7 +7,6 @@ from src.modules.DATA_MODULE import *
 from src.lib import *
 from src.system.secret import *
 
-
 def main(mode=None):
     # Purge data
     cleanDatabase.purgeData()
