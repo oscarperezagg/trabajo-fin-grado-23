@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import threading
 import os
@@ -6,6 +7,8 @@ from src.modules import *
 from src.modules.DATA_MODULE import *
 from src.lib import *
 from src.system.secret import *
+from src.system.migrate import *
+
 
 def main(mode=None):
     # Purge data
@@ -116,3 +119,15 @@ Configure bien los siguiente campos:
     # Creamos los documentos de prueba
     conn.defaultDocs(TEST_DOCS)
     logger.info("Configuración completada")
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    

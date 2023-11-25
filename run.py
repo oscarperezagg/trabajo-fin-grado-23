@@ -1,5 +1,5 @@
 import sys
-from src import iniciar_app, setup_app
+from src import iniciar_app, setup_app, migrate
 from src.system.logging_config import logger
 
 
@@ -8,6 +8,7 @@ Opciones generales:
 
     - stats: Muestra las métricas sobre la base de datos
     - setup: Configura la aplicación
+    - migrate: Migrar la base de datos
 
 Opciones de descarga de históricos:
 
@@ -39,6 +40,7 @@ some_art = """ _____ _____ ____   ____  _____      ____  _  _
 options = {
     "": iniciar_app,
     "setup": setup_app,
+    "migrate": migrate,
     "stats": lambda: iniciar_app(mode="stats"),
     "downloadSPX": lambda: iniciar_app(mode="DownloadSPX"),
     "downloadStocks": lambda: iniciar_app(mode="DownloadStocks"),
@@ -54,6 +56,7 @@ options = {
 
 if __name__ == "__main__":
     # Get system arguments
+
     try:
         print("\033c")
         print(some_art)

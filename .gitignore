@@ -5,3 +5,4 @@ tfg_env/
 secret.py
 src/system/secret.py
 src/system/secret.py
+test_*
