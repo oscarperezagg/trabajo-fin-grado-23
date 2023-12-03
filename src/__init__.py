@@ -87,7 +87,7 @@ def iniciar_app(mode=None):
 
     app_thread.start()  # Iniciar el hilo de la aplicación
     print("")
-    if mode == "": 
+    if mode == "" or mode == "stats": 
         logger.debug(
             "Crear un hilo para ejecutar Scheduling.checkForTask() en segundo plano"
         )
