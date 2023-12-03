@@ -36,5 +36,4 @@ class AlphaVantajeBase:
 
         final_url = AlphaVantajeBase.url + "&".join(final_parameters)
 
-        print(final_url)
         return HttpFunctions.httpRequest("GET", final_url)

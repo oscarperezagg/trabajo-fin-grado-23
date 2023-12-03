@@ -5,7 +5,7 @@ from src.system.logging_config import logger
 
 main_text = """Si el programa se ejecuta sin argumentos, se ejecutará en modo normal.\n
 Opciones generales:
-    
+
     - full: Calcular sobre los últimos datos y obtener señales
     - compute: Calcular sobre los últimos datos
     - signals: Obtener señales sobre los últimos datos calculados
@@ -64,18 +64,24 @@ options = {
 
 if __name__ == "__main__":
     # Get system arguments
+    
+    
+    good_answer = False
+    while not good_answer:
 
-    try:
         print("\033c")
-        print(some_art)
-
+        print(some_art) 
+        
+        
         selected_option = input(main_text)
         print("")
 
-        if selected_option in options:
-            options[selected_option]()
+        if selected_option not in options:
+            print("")
+            print(f"This option is not valid: {selected_option}")
+            input("Press enter to try again...")
         else:
-            print(f"Valid options are: {list(options.keys())}")
+            good_answer = True
+            
+    options[selected_option]()
 
-    except Exception as e:
-        logger.critical("Fatal error occurred: %s", str(e))
