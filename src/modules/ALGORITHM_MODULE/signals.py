@@ -45,7 +45,7 @@ class signals:
 
                 if df.iloc[-1]["minimunSignal"]:
                     buy_signals[stock] = [
-                        "- Requerimiento básico cumplidos (Beta, 200 SMA, Presentación de resultados"
+                        "- Requerimiento básico cumplidos (Beta, 200 SMA, Presentación de resultados)"
                     ]
 
                     if df.iloc[-1]["superMinimunSignal"]:
@@ -98,13 +98,15 @@ class signals:
         ruta_temp_absoluta = os.path.abspath(ruta_temp)
 
         return ruta_temp_absoluta
-    
+
     def getTempResults():
         # Obtén la ruta del directorio actual donde se encuentra el archivo.py
         directorio_actual = os.path.dirname(os.path.abspath(__file__))
 
         # Construye la ruta al directorio "temp" que está fuera del directorio actual
-        ruta_temp = os.path.abspath(os.path.join(directorio_actual, "..", "..", "temp","results"))
+        ruta_temp = os.path.abspath(
+            os.path.join(directorio_actual, "..", "..", "temp", "results")
+        )
 
         # Convierte la ruta a una ruta absoluta (opcional)
         ruta_temp_absoluta = os.path.abspath(ruta_temp)

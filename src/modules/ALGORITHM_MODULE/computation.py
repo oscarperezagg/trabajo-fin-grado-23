@@ -7,7 +7,7 @@ import threading
 from tqdm import tqdm
 
 
-INTERVAL = "15min"
+INTERVAL = "30min"
 
 
 class computation:
