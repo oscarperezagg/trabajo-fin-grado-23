@@ -168,6 +168,8 @@ class TDA_CoreData:
                         res = TDA_CoreData.__UpdateAsset(
                             asset["symbol"], timestamp, asset
                         )
+                    else:
+                        logger.debug("No hay más tiempo para actualizar %s", asset["symbol"])
 
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
@@ -731,7 +733,7 @@ class TDA_CoreData:
             return (True, asset_data)
 
         # Obtenemos el horario de trading de hoy
-        start_datetime, end_datetime = AV_CoreData.__trading_hours()
+        start_datetime, end_datetime = TDA_CoreData.__trading_hours()
 
         if start_datetime < fecha_despues < end_datetime:
             logger.debug("Data needs to be updated")

@@ -42,6 +42,8 @@ class AV_CoreData:
 
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
+                if timestamp != "15min":
+                    continue
                 print("")
                 logger.info("Downloading data for %s", timestamp)
                 print("")
@@ -273,7 +275,7 @@ class AV_CoreData:
         start_datetime, end_datetime = AV_CoreData.__trading_hours()
         now = datetime.now()
 
-        if not (start_datetime <= now <= end_datetime):
+        if False and not (start_datetime <= now <= end_datetime):
             logger.info("No estamos en horario de trading")
             logger.info("[END] Updating assets with Alpha Vantaje API")
 

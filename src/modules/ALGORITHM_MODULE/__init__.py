@@ -1,2 +1,3 @@
-from .calculus.TechnicalIndicators import TechnicalIndicators
-from .calculus.formatter import CalculusFormater
+from .parameters import *
+from .computation import *
+from .signals import *
