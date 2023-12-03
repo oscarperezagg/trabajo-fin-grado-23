@@ -27,7 +27,7 @@ class computation:
         for stock in tqdm(validStocks, desc="Procesando stocks"):
             t = computation.computeSingleData(stock, path, testing)
             storingThreats.append(t)
-
+        print("\n")
         logger.info("Esperando a que los threads terminen")
         for t in storingThreats:
             t.join()
