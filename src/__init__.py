@@ -10,13 +10,34 @@ from src.system.secret import *
 from src.system.migrate import *
 
 
+some_art = """ _____ _____ ____   ____  _____      ____  _  _   
+|_   _|  ___/ ___| |___ \|___ /     |___ \| || |  
+  | | | |_ | |  _    __) | |_ \ _____ __) | || |_ 
+  | | |  _|| |_| |  / __/ ___) |_____/ __/|__   _|
+  |_| |_|   \____| |_____|____/     |_____|  |_|  
+  
+  
+  Made by: Óscar Pérez Arruti\n\n"""
+
+
 def main(mode=None):
     # Purge data
     cleanDatabase.purgeData()
     # Show stats
     logger.setLevel(logging.INFO)
+
+    print("\033c")
+    print(some_art)
     # Temporal
-    if mode == "stats":
+    if mode == "computeAndResults":
+        validStocks = computation.computeData()
+        signals.signals(validStocks)
+    elif mode == "compute":
+        computation.computeData()
+    elif mode == "lastResults":
+        validStocks = computation.getValidStocks()
+        signals.signals(validStocks)
+    elif mode == "stats":
         Scheduling.schedule_stats("seconds", 10)
     elif mode == "DownloadStocks":
         AV_CoreData.downloadAsset()
@@ -66,12 +87,13 @@ def iniciar_app(mode=None):
 
     app_thread.start()  # Iniciar el hilo de la aplicación
     print("")
-    logger.debug(
-        "Crear un hilo para ejecutar Scheduling.checkForTask() en segundo plano"
-    )
-    check_for_task_thread = threading.Thread(target=ejecutar_check_for_task)
-    check_for_task_thread.start()  # Iniciar el hilo de Scheduling.checkForTask()
-    print("")
+    if mode == "": 
+        logger.debug(
+            "Crear un hilo para ejecutar Scheduling.checkForTask() en segundo plano"
+        )
+        check_for_task_thread = threading.Thread(target=ejecutar_check_for_task)
+        check_for_task_thread.start()  # Iniciar el hilo de Scheduling.checkForTask()
+        print("")
 
 
 def setup_app(host="127.0.0.1", port="27017", user=None, password=None):
@@ -119,15 +141,3 @@ Configure bien los siguiente campos:
     # Creamos los documentos de prueba
     conn.defaultDocs(TEST_DOCS)
     logger.info("Configuración completada")
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    

@@ -1,6 +1,11 @@
+from datetime import datetime
+
 import os
+import threading
 import pandas as pd
 from tqdm import tqdm
+import webbrowser
+import os
 
 FAANG = ["FB", "AAPL", "AMZN", "NFLX", "GOOG"]
 
@@ -13,8 +18,7 @@ class signals:
     @staticmethod
     def signals(validStocks):
         path = signals.getTempPath()
-        print(len(validStocks))
-
+        print("\n")
         buy_signals = {}
         for stock in tqdm(validStocks, desc="Procesando stocks"):
             try:
@@ -43,15 +47,26 @@ class signals:
                     buy_signals[stock] = [
                         "- Requerimiento básico cumplidos (Beta, 200 SMA, Presentación de resultados"
                     ]
+
                     if df.iloc[-1]["superMinimunSignal"]:
                         buy_signals[stock].append(
                             "- Por encima de la media de 200 y 50 días"
                         )
 
+                df["rsiSignal"] = df.apply(lambda row: signals.rsiSignal(row), axis=1)
+
+                df["minimunSignalPlusRsi"] = df["minimunSignal"] & df["rsiSignal"]
+
+                if df.iloc[-1]["minimunSignalPlusRsi"]:
+                    buy_signals[stock].append("- RSI por encima de 70")
+
             except Exception as e:
                 print(e)
 
+        print("\n")
+
         signals.createResultsTable(buy_signals)
+        exit()
 
     def betaSignal(row, stock):
         return row["beta"] > 1.4 or stock in FAANG
@@ -65,6 +80,9 @@ class signals:
     def ReportSignal(row):
         return row["reportPriceMovement"] > 0
 
+    def rsiSignal(row):
+        return row["RSI_14"] > 70
+
     #############################################################
     #######################  SUPPORT  ##########################
     #############################################################
@@ -75,6 +93,18 @@ class signals:
 
         # Construye la ruta al directorio "temp" que está fuera del directorio actual
         ruta_temp = os.path.abspath(os.path.join(directorio_actual, "..", "..", "temp"))
+
+        # Convierte la ruta a una ruta absoluta (opcional)
+        ruta_temp_absoluta = os.path.abspath(ruta_temp)
+
+        return ruta_temp_absoluta
+    
+    def getTempResults():
+        # Obtén la ruta del directorio actual donde se encuentra el archivo.py
+        directorio_actual = os.path.dirname(os.path.abspath(__file__))
+
+        # Construye la ruta al directorio "temp" que está fuera del directorio actual
+        ruta_temp = os.path.abspath(os.path.join(directorio_actual, "..", "..", "temp","results"))
 
         # Convierte la ruta a una ruta absoluta (opcional)
         ruta_temp_absoluta = os.path.abspath(ruta_temp)
@@ -125,18 +155,26 @@ class signals:
         </body>
         </html>
         """
-        import webbrowser
-        import os
 
         # Suponiendo que 'tabla_html' es tu código HTML generado
 
         # Guardar el HTML en un archivo
-        nombre_archivo = r"/Users/oscarperezarruti/Documents/Documentos/Repositorios/trabajo-fin-grado-23/src/temp/results/tabla_acciones.html"
+        # Obtener la fecha y hora actual
+        now = datetime.now()
+
+        # Formatear la fecha y hora en el formato deseado (año-mes-día_hora-minuto-segundo)
+        formatted_date = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+        resultsPath = signals.getTempResults()
+        nombre_archivo = f"{resultsPath}/tabla_acciones_{formatted_date}.html"
         with open(nombre_archivo, "w") as archivo:
             archivo.write(html)
 
-        # Ruta absoluta al archivo
-        ruta_absoluta = os.path.abspath(nombre_archivo)
+        # Crear y empezar un nuevo hilo para abrir el navegador
+        hilo_navegador = threading.Thread(
+            target=signals.abrir_navegador, args=(nombre_archivo,)
+        )
+        hilo_navegador.start()
 
-        # Abrir en el navegador
+    def abrir_navegador(nombre_archivo):
         webbrowser.open("file://" + os.path.realpath(nombre_archivo))

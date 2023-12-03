@@ -7,7 +7,8 @@ import threading
 from tqdm import tqdm
 
 
-INTERVAL = "30min"
+INTERVAL = "15min"
+
 
 class computation:
     #############################################################
@@ -21,28 +22,26 @@ class computation:
         validStocks = computation.getValidStocks()
         logger.info("Obteninedo dirección de la carpeta temporal")
         path = computation.getTempPath()
-
+        print("\n")
         storingThreats = []
         for stock in tqdm(validStocks, desc="Procesando stocks"):
-     
             t = computation.computeSingleData(stock, path, testing)
             storingThreats.append(t)
-
 
         logger.info("Esperando a que los threads terminen")
         for t in storingThreats:
             t.join()
-            
+
         return validStocks
 
     def computeSingleData(stock, path, testing=False):
         logger.debug("---> Procesando %s", stock)
-        data = computation.getStock(stock,testing)
+        data = computation.getStock(stock, testing)
 
         logger.debug("---> Calculando el SMA de 50 y 200 períodos")
         parameters.simplemovingaverage(data, 200)
         parameters.simplemovingaverage(data, 50)
-  
+
         logger.debug("---> Calculando el RSI de 14 períodos")
         parameters.relativestregthindex(data, 14)
 
@@ -140,7 +139,7 @@ class computation:
         # Convierte el resultado de nuevo en una lista si es necesario
         return list(interseccion)
 
-    def getStock(symbol,testing):
+    def getStock(symbol, testing):
         logger.debug("---> Obteniendo los datos de %s", symbol)
         conn = MongoDbFunctions(
             DATABASE["host"],
@@ -152,7 +151,7 @@ class computation:
         )
 
         data = conn.findByMultipleFields(
-            fields={"symbol": "AAPL", "interval": INTERVAL}, custom=True
+            fields={"symbol": symbol, "interval": INTERVAL}, custom=True
         )
         logger.debug("---> Se han obtenido los datos de %s", symbol)
         data = parameters.formatData(data)
@@ -175,5 +174,3 @@ class computation:
 
     def storeData(data, stock, path):
         data.to_pickle(f"{path}/{stock}.pkl")
-
-

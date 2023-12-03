@@ -6,4 +6,6 @@ secret.py
 src/system/secret.py
 src/system/secret.py
 test_*
-src/temp
+src/temp/*
+!src/temp/results
+src/temp/results/* 

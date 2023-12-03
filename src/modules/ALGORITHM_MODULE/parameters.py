@@ -59,14 +59,10 @@ class parameters:
     #########################################################
 
     @staticmethod
-    def relativestregthindex(df, period):
+    def relativestregthindex(data, period):
         # Calcular el SMA de 10 períodos utilizando la función talib.SMA
-        rsi = df.ta.rsi(length=period, append=True)
-        # Añadir la columna rsi al DataFrame
-        df[f"RSI_{period}"] = rsi
-
-        # Mostrar el DataFrame con la columna SMA
-        return df
+        rsi = talib.RSI(data["close"], timeperiod=period)
+        data[f"RSI_{period}"] = rsi
 
     ##########################################################
     ######################  BETA  ############################

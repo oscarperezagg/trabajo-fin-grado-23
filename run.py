@@ -5,10 +5,10 @@ from src.system.logging_config import logger
 
 main_text = """Si el programa se ejecuta sin argumentos, se ejecutará en modo normal.\n
 Opciones generales:
-
-    - stats: Muestra las métricas sobre la base de datos
-    - setup: Configura la aplicación
-    - migrate: Migrar la base de datos
+    
+    - full: Calcular sobre los últimos datos y obtener señales
+    - compute: Calcular sobre los últimos datos
+    - signals: Obtener señales sobre los últimos datos calculados
 
 Opciones de descarga de históricos:
 
@@ -25,6 +25,12 @@ Options de descarga de datos fundamentales:
     - CashFlow: Descarga el flujo de caja de las acciones del SPX
     - Earnings: Descarga las ganancias de las acciones del SPX
     
+Opciones del sistema: 
+
+    - stats: Muestra las métricas sobre la base de datos
+    - setup: Configura la aplicación
+    - migrate: Migrar la base de datos
+    
 Selecciona una opción (pulsa enter para ejecutar en modo normal): """
 some_art = """ _____ _____ ____   ____  _____      ____  _  _   
 |_   _|  ___/ ___| |___ \|___ /     |___ \| || |  
@@ -34,7 +40,6 @@ some_art = """ _____ _____ ____   ____  _____      ____  _  _
   
   
   Made by: Óscar Pérez Arruti\n\n"""
-
 
 # Define un diccionario de opciones y las funciones asociadas
 options = {
@@ -51,6 +56,9 @@ options = {
     "BalanceSheet": lambda: iniciar_app(mode="BalanceSheet"),
     "CashFlow": lambda: iniciar_app(mode="CashFlow"),
     "Earnings": lambda: iniciar_app(mode="Earnings"),
+    "compute": lambda: iniciar_app(mode="compute"),
+    "full": lambda: iniciar_app(mode="computeAndResults"),
+    "signals": lambda: iniciar_app(mode="lastResults"),
 }
 
 
