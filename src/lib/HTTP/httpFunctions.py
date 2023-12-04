@@ -79,21 +79,28 @@ class HttpFunctions:
             return (False, response)
         elif response.status_code == 400:
             logger.error("Bad request. Status code: %d", response.status_code)
+            logger.error("ERROR: %s", response.text)
             return (False, response)
         elif response.status_code == 401:
             logger.error("Unauthorized access. Status code: %d", response.status_code)
+            logger.error("ERROR: %s", response.text)
+
             return (False, response)
         elif response.status_code == 403:
             logger.error("Access forbidden. Status code: %d", response.status_code)
+            logger.error("ERROR: %s", response.text)
             return (False, response)
         elif response.status_code == 404:
             logger.error("Resource not found. Status code: %d", response.status_code)
+            logger.error("ERROR: %s", response.text)
             return (False, response)
         elif response.status_code == 500:
             logger.error("Internal server error. Status code: %d", response.status_code)
+            logger.error("ERROR: %s", response.text)
             return (False, response)
         else:
             logger.error("Unknown error. Status code: %d", response.status_code)
+            logger.error("ERROR: %s", response.text)
             return (False, response)
 
     @staticmethod

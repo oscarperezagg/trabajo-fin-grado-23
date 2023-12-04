@@ -89,6 +89,7 @@ class AV_CoreData:
 
                     if not res[0]:
                         logger.error("An error occurred: %s", str(res[1]))
+                        if res[1][1] is 
                         return (False, "")
 
                     if res[0]:
