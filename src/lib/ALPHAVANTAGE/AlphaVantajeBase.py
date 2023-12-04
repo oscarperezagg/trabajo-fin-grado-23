@@ -4,7 +4,6 @@ from ..HTTP import HttpFunctions
 # Configure the logger
 
 
-
 class AlphaVantajeBase:
     url = "https://www.alphavantage.co/query"
 
@@ -34,6 +33,7 @@ class AlphaVantajeBase:
                     f"{parameter_name}={parameters[parameter_name]}"
                 )
 
-        final_url = AlphaVantajeBase.url + "&".join(final_parameters)
+        logger.info("Final URL: %s", "&".join(final_parameters))
 
+        final_url = AlphaVantajeBase.url + "&".join(final_parameters)
         return HttpFunctions.httpRequest("GET", final_url)

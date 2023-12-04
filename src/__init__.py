@@ -37,6 +37,8 @@ def main(mode=None):
     elif mode == "lastResults":
         validStocks = computation.getValidStocks()
         signals.signals(validStocks)
+    elif mode == "testing":
+        validStocks = computation.computeData(testing=True)
     elif mode == "stats":
         Scheduling.schedule_stats("seconds", 10)
     elif mode == "DownloadStocks":
@@ -87,13 +89,12 @@ def iniciar_app(mode=None):
 
     app_thread.start()  # Iniciar el hilo de la aplicación
     print("")
-    if mode == "" or mode == "stats": 
-        logger.debug(
-            "Crear un hilo para ejecutar Scheduling.checkForTask() en segundo plano"
-        )
-        check_for_task_thread = threading.Thread(target=ejecutar_check_for_task)
-        check_for_task_thread.start()  # Iniciar el hilo de Scheduling.checkForTask()
-        print("")
+    logger.debug(
+        "Crear un hilo para ejecutar Scheduling.checkForTask() en segundo plano"
+    )
+    check_for_task_thread = threading.Thread(target=ejecutar_check_for_task)
+    check_for_task_thread.start()  # Iniciar el hilo de Scheduling.checkForTask()
+    print("")
 
 
 def setup_app(host="127.0.0.1", port="27017", user=None, password=None):

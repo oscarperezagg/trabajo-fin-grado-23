@@ -59,6 +59,7 @@ options = {
     "compute": lambda: iniciar_app(mode="compute"),
     "full": lambda: iniciar_app(mode="computeAndResults"),
     "signals": lambda: iniciar_app(mode="lastResults"),
+    "testing": lambda: iniciar_app(mode="testing"),
 }
 
 

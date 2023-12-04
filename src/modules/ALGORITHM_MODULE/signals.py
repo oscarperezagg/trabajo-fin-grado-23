@@ -18,6 +18,7 @@ class signals:
     @staticmethod
     def signals(validStocks):
         path = signals.getTempPath()
+        signalsPath = signals.getTestingsPath()
         print("\n")
         buy_signals = {}
         for stock in tqdm(validStocks, desc="Procesando stocks"):
@@ -59,10 +60,11 @@ class signals:
 
                 if df.iloc[-1]["minimunSignalPlusRsi"]:
                     buy_signals[stock].append("- RSI por encima de 70")
+                    
+                df.to_pickle(f"{signalsPath}/{stock}.pkl")
 
             except Exception as e:
-                print(e)
-
+                pass
         print("\n")
 
         signals.createResultsTable(buy_signals)
@@ -106,6 +108,20 @@ class signals:
         # Construye la ruta al directorio "temp" que está fuera del directorio actual
         ruta_temp = os.path.abspath(
             os.path.join(directorio_actual, "..", "..", "temp", "results")
+        )
+
+        # Convierte la ruta a una ruta absoluta (opcional)
+        ruta_temp_absoluta = os.path.abspath(ruta_temp)
+
+        return ruta_temp_absoluta
+    
+    def getTestingsPath():
+        # Obtén la ruta del directorio actual donde se encuentra el archivo.py
+        directorio_actual = os.path.dirname(os.path.abspath(__file__))
+
+        # Construye la ruta al directorio "temp" que está fuera del directorio actual
+        ruta_temp = os.path.abspath(
+            os.path.join(directorio_actual, "..", "..", "temp", "testings")
         )
 
         # Convierte la ruta a una ruta absoluta (opcional)

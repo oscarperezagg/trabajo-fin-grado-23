@@ -42,6 +42,8 @@ class AV_CoreData:
 
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
+                # ELIMINAR
+
                 if timestamp != "15min":
                     continue
                 print("")
@@ -112,7 +114,6 @@ class AV_CoreData:
                 "symbol": asset,
                 "apikey": ALPHA_VANTAGE_API_KEY,
                 "entitlement": "delayed",
-                
             }
 
             if interval == "1month":
@@ -228,7 +229,9 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        logger.error(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        logger.error(
+                            f"Timestamp not found {year_month} on Alpha Vantaje API"
+                        )
                         return (True, "")
                     else:
                         return (False, data.get("Error Message"))
@@ -246,7 +249,7 @@ class AV_CoreData:
             if finalDataSet == {}:
                 logger.warning("Asset not found on Alpha Vantaje API")
                 return (True, "")
-            
+
             upload = AV_CoreData.__uploadAssetDate(finalDataSet)
             if not upload[0]:
                 return upload
@@ -275,7 +278,7 @@ class AV_CoreData:
         start_datetime, end_datetime = AV_CoreData.__trading_hours()
         now = datetime.now()
 
-        if False and not (start_datetime <= now <= end_datetime):
+        if not (start_datetime <= now <= end_datetime):
             logger.info("No estamos en horario de trading")
             logger.info("[END] Updating assets with Alpha Vantaje API")
 
@@ -294,7 +297,7 @@ class AV_CoreData:
                 total_assets = len(assets)
 
                 for index, asset in enumerate(assets):
-                    logger.debug(
+                    logger.info(
                         "Asset %s of %s (%.2f%%)",
                         index + 1,
                         total_assets,
@@ -412,7 +415,9 @@ class AV_CoreData:
                     logger.warning("Asset not found on Alpha Vantaje API")
                     error = data.get("Error Message")
                     if error and "Invalid API call" in error:
-                        logger.error(f"Timestamp not found {year_month} on Alpha Vantaje API")
+                        logger.error(
+                            f"Timestamp not found {year_month} on Alpha Vantaje API"
+                        )
                         return (True, "")
                     else:
                         return (False, data.get("Error Message"))
@@ -430,21 +435,19 @@ class AV_CoreData:
             if finalDataSet == {}:
                 logger.error("New data not found on Alpha Vantaje API")
                 return (True, "")
-            
+
             # Eliminar los datos del mes start_date.month de complete_asset
             index = 0
+            startMonth = start_date.month
             for i in range(len(complete_asset["data"])):
                 tempDate = complete_asset["data"][i]["datetime"]
                 try:
-                    tempDate = datetime.strptime(
-                        complete_asset["data"][0]["datetime"], "%Y-%m-%d"
-                    )
+                    tempDate = datetime.strptime(tempDate, "%Y-%m-%d")
                 except Exception as e:
-                    tempDate = datetime.strptime(
-                        complete_asset["data"][0]["datetime"], "%Y-%m-%d %H:%M:%S"
-                    )
+                    tempDate = datetime.strptime(tempDate, "%Y-%m-%d %H:%M:%S")
 
-                if tempDate.month != start_date.month:
+                tempMonth = tempDate.month
+                if tempMonth != startMonth:
                     break
 
                 index += 1
@@ -463,8 +466,6 @@ class AV_CoreData:
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
-
-    
 
     def __updateAssetData(assetData):
         conn = None
