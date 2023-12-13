@@ -21,13 +21,15 @@ class TDA_CoreData:
     """
 
     @staticmethod
-    def downloadAsset():
+    def downloadAsset(mode):
         """
         Esta función descarga activos de cualquier tipo
 
         :return: Un diccionario con los datos descargados.
         """
         logger.info("[START] Downloading assets with Twelve Data API")
+
+
         try:
             # Obtener todos los registros de descarga del activo seleccionado
             config = TDA_CoreData.__getConfig()
@@ -64,6 +66,7 @@ class TDA_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Downloading assets with Twelve Data API")
+        updateStatus(False, mode)
 
     def __downloadAsset(id, asset, interval, update):
         try:
@@ -132,24 +135,24 @@ class TDA_CoreData:
             return (False, e)
 
     @staticmethod
-    def updateAssets():
+    def updateAssets(mode):
         """
         Esta función activos de cualquier tipo
 
         :return: Un diccionario con los datos descargados.
         """
         logger.info("[START] Updating assets with Twelve Data API")
-        
+
         # Obtenemos el horario de trading de hoy
         start_datetime, end_datetime = TDA_CoreData.__trading_hours()
         now = datetime.now()
-        
+
         if not (start_datetime <= now <= end_datetime):
             logger.info("No estamos en horario de trading")
             logger.info("[END] Updating assets with Twelve Data API")
 
             return (False, "No estamos en horario de trading")
-        
+
         try:
             # Obtener todos los registros de descarga del activo seleccionado
             config = TDA_CoreData.__getConfig()
@@ -169,12 +172,15 @@ class TDA_CoreData:
                             asset["symbol"], timestamp, asset
                         )
                     else:
-                        logger.debug("No hay más tiempo para actualizar %s", asset["symbol"])
+                        logger.debug(
+                            "No hay más tiempo para actualizar %s", asset["symbol"]
+                        )
 
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Updating assets with Twelve Data API")
+        updateStatus(False, mode)
 
     def __UpdateAsset(asset, interval, complete_asset):
         try:
@@ -665,7 +671,6 @@ class TDA_CoreData:
         numero_semana_actual = fecha_actual.isocalendar()[1]
         numero_semana_dato = last_datetime.isocalendar()[1]
 
-        
         if interval == "1month":
             if fecha_actual.year > last_datetime.year:
                 return (True, asset_data)
@@ -673,7 +678,7 @@ class TDA_CoreData:
                 return (True, asset_data)
             else:
                 return (False, "")
-        
+
         if interval == "1week":
             if fecha_actual.year > last_datetime.year:
                 return (True, asset_data)
@@ -683,7 +688,7 @@ class TDA_CoreData:
                 return (True, asset_data)
             else:
                 return (False, "")
-            
+
         if interval == "1day":
             dia_semana = fecha_actual.weekday()
             if fecha_actual.year > last_datetime.year:
@@ -694,13 +699,16 @@ class TDA_CoreData:
                 return (True, asset_data)
             elif fecha_actual.day == last_datetime.day + 2 and (0 < dia_semana < 6):
                 return (True, asset_data)
-            elif fecha_actual.day == last_datetime.day + 1 and fecha_actual.hour >= 22 and dia_semana < 5:
+            elif (
+                fecha_actual.day == last_datetime.day + 1
+                and fecha_actual.hour >= 22
+                and dia_semana < 5
+            ):
                 return (True, asset_data)
 
             else:
                 return (False, "")
-            
-            
+
         # Utiliza la variable 'unit' en lugar de 'days' en timedelta
         if unit == "days":
             logger.debug("La unidad es días")
@@ -763,7 +771,6 @@ class TDA_CoreData:
                 logger.debug("Data needs to be updated")
                 return (True, asset_data)
 
-
     def __trading_hours():
         # Comprobamos si la fecha está dentro del horario de trading
         now = datetime.now()
@@ -772,7 +779,60 @@ class TDA_CoreData:
         end_time = datetime.strptime(trading_hours["end"], "%H:%M")
 
         # Combina la fecha actual con las horas de inicio y finalización
-        start_datetime = datetime(now.year, now.month, now.day, start_time.hour, start_time.minute)
-        end_datetime = datetime(now.year, now.month, now.day, end_time.hour, end_time.minute)
-        
+        start_datetime = datetime(
+            now.year, now.month, now.day, start_time.hour, start_time.minute
+        )
+        end_datetime = datetime(
+            now.year, now.month, now.day, end_time.hour, end_time.minute
+        )
+
         return start_datetime, end_datetime
+
+
+def getStatus():
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Obteniendo elemento de configuración")
+        configDocu = conn.findByField("object", "error control")
+        logger.debug("Configuración obtenida")
+        conn.close()
+        return (True, configDocu)
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)
+
+
+def updateStatus(status, action):
+    config = getStatus()
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Modificando elemento de configuración")
+        conn.updateByField(
+            "object", "error control", {"status": status, "action": action}
+        )
+        logger.debug("Configuración modificada")
+        conn.close()
+        return (True, "")
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)

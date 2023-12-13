@@ -33,7 +33,7 @@ class AlphaVantajeBase:
                     f"{parameter_name}={parameters[parameter_name]}"
                 )
 
-        logger.info("Final URL: %s", "&".join(final_parameters))
+        logger.debug("Final URL: %s", "&".join(final_parameters))
 
         final_url = AlphaVantajeBase.url + "&".join(final_parameters)
         return HttpFunctions.httpRequest("GET", final_url)

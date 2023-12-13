@@ -20,6 +20,28 @@ some_art = """ _____ _____ ____   ____  _____      ____  _  _
   Made by: Óscar Pérez Arruti\n\n"""
 
 
+def startOrFinishTask():
+    pass
+
+
+funciones_por_modo = {
+    "computeAndResults": [lambda: signals.signals(computation.computeData()), False],
+    "compute": [computation.computeData, False],
+    "lastResults": [lambda: signals.signals(computation.getValidStocks()), False],
+    "testing": [lambda: computation.computeData(testing=True), False],
+    "stats": [lambda: Scheduling.schedule_stats("seconds", 10), False],
+    "DownloadStocks": [AV_CoreData.downloadAsset, True],  # ------------
+    "UpdateStocks": [AV_CoreData.updateAssets, True],  # ------------
+    "DownloadSPX": [TDA_CoreData.downloadAsset, True],  # ------------
+    "UpdateSPX": [TDA_CoreData.updateAssets, True],  # ------------
+    "companyOverview": [AV_FundamentalData.getCompanyOverview, False],
+    "IncomeStatement": [AV_FundamentalData.getIncomeStatement, False],
+    "BalanceSheet": [AV_FundamentalData.getBalanceSheet, False],
+    "CashFlow": [AV_FundamentalData.getCashFlow, False],
+    "Earnings": [AV_FundamentalData.getEarnings, False],
+}
+
+
 def main(mode=None):
     # Purge data
     cleanDatabase.purgeData()
@@ -29,36 +51,20 @@ def main(mode=None):
     print("\033c")
     print(some_art)
     # Temporal
-    if mode == "computeAndResults":
-        validStocks = computation.computeData()
-        signals.signals(validStocks)
-    elif mode == "compute":
-        computation.computeData()
-    elif mode == "lastResults":
-        validStocks = computation.getValidStocks()
-        signals.signals(validStocks)
-    elif mode == "testing":
-        validStocks = computation.computeData(testing=True)
-    elif mode == "stats":
-        Scheduling.schedule_stats("seconds", 10)
-    elif mode == "DownloadStocks":
-        AV_CoreData.downloadAsset()
-    elif mode == "UpdateStocks":
-        AV_CoreData.updateAssets()
-    elif mode == "DownloadSPX":
-        TDA_CoreData.downloadAsset()
-    elif mode == "UpdateSPX":
-        TDA_CoreData.updateAssets()
-    elif mode == "companyOverview":
-        AV_FundamentalData.getCompanyOverview()
-    elif mode == "IncomeStatement":
-        AV_FundamentalData.getIncomeStatement()
-    elif mode == "BalanceSheet":
-        AV_FundamentalData.getBalanceSheet()
-    elif mode == "CashFlow":
-        AV_FundamentalData.getCashFlow()
-    elif mode == "Earnings":
-        AV_FundamentalData.getEarnings()
+    if mode in funciones_por_modo:
+        if funciones_por_modo[mode][1]:
+            # Debemos ejecutar la función en un hilo aparte
+            updateStatus(True, mode)
+            finished = False
+            while not finished:
+                # Ejecutamos la función en un hilo aparte
+                funciones_por_modo[mode][0](mode)
+                # Comprobamos el estado de la tarea en la base de datos
+                finished = not getErrorStatus()
+                if not finished:
+                    logger.error("Error controlado durante la tarea %s", mode)
+        else:
+            funciones_por_modo[mode][0]()
     else:
         logger.info("Starting application")
         # Schedule the task of downloading the SPX
@@ -142,3 +148,60 @@ Configure bien los siguiente campos:
     # Creamos los documentos de prueba
     conn.defaultDocs(TEST_DOCS)
     logger.info("Configuración completada")
+
+
+def getStatus():
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Obteniendo elemento de configuración")
+        configDocu = conn.findByField("object", "error control")
+        logger.debug("Configuración obtenida")
+        conn.close()
+        return (True, configDocu)
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)
+
+
+def getErrorStatus():
+    status = getStatus()
+    if status[0]:
+        return status[1]["status"]
+    else:
+        logger.critical("An error ocurred while getting error control document")
+
+
+def updateStatus(status, action):
+    config = getStatus()
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Modificando elemento de configuración")
+        conn.updateByField(
+            "object", "error control", {"status": status, "action": action}
+        )
+        logger.debug("Configuración modificada")
+        conn.close()
+        return (True, "")
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)

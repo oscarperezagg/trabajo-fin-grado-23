@@ -28,13 +28,14 @@ class AV_CoreData:
     ######################
 
     @staticmethod
-    def downloadAsset():
+    def downloadAsset(mode):
         """
         Esta función descarga activos de cualquier tipo
 
         :return: Un diccionario con los datos descargados.
         """
         logger.info("[START] Downloading assets with Alpha Vantaje API")
+  
         try:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
@@ -89,8 +90,8 @@ class AV_CoreData:
 
                     if not res[0]:
                         logger.error("An error occurred: %s", str(res[1]))
-                        if res[1][1] is 
-                        return (False, "")
+
+                        return (False, res[1][1])
 
                     if res[0]:
                         logger.info("Asset downloaded successfully")
@@ -99,6 +100,7 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Downloading assets with Alpha Vantaje API")
+        updateStatus(False,mode)
 
     def __downloadNoIntradayDataAsset(asset, interval):
         try:
@@ -267,7 +269,7 @@ class AV_CoreData:
     ######################
 
     @staticmethod
-    def updateAssets():
+    def updateAssets(mode):
         """
         Esta función activos de cualquier tipo
 
@@ -336,6 +338,8 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Updating assets with Alpha Vantaje API")
+        updateStatus(False,mode)
+
 
     def __updateAsset(asset, interval, complete_asset):
         try:
@@ -437,7 +441,7 @@ class AV_CoreData:
                 logger.error("New data not found on Alpha Vantaje API")
                 return (True, "")
 
-            # Eliminar los datos del mes start_date.month de complete_asset
+            # Borramos los datos del mes start_date.month de complete_asset
             index = 0
             startMonth = start_date.month
             for i in range(len(complete_asset["data"])):
@@ -1072,3 +1076,53 @@ class AV_CoreData:
                 conn.close()
             logger.error("An error occurred: %s", str(e))
             return (False, e)
+
+
+
+def getStatus():
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Obteniendo elemento de configuración")
+        configDocu = conn.findByField("object", "error control")
+        logger.debug("Configuración obtenida")
+        conn.close()
+        return (True, configDocu)
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)
+
+
+def updateStatus(status, action):
+    config = getStatus()
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Modificando elemento de configuración")
+        conn.updateByField(
+            "object", "error control", {"status": status, "action": action}
+        )
+        logger.debug("Configuración modificada")
+        conn.close()
+        return (True, "")
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)
