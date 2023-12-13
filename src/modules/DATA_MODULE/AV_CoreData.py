@@ -35,7 +35,7 @@ class AV_CoreData:
         :return: Un diccionario con los datos descargados.
         """
         logger.info("[START] Downloading assets with Alpha Vantaje API")
-  
+
         try:
             # Obtener todos los registros de descarga del activo seleccionado
             config = AV_CoreData.__getConfig()
@@ -100,7 +100,7 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Downloading assets with Alpha Vantaje API")
-        updateStatus(False,mode)
+        updateStatus(False, mode)
 
     def __downloadNoIntradayDataAsset(asset, interval):
         try:
@@ -338,8 +338,7 @@ class AV_CoreData:
             logger.error("An error occurred: %s", str(e))
             return (False, e)
         logger.info("[END] Updating assets with Alpha Vantaje API")
-        updateStatus(False,mode)
-
+        updateStatus(False, mode)
 
     def __updateAsset(asset, interval, complete_asset):
         try:
@@ -1076,7 +1075,6 @@ class AV_CoreData:
                 conn.close()
             logger.error("An error occurred: %s", str(e))
             return (False, e)
-
 
 
 def getStatus():
