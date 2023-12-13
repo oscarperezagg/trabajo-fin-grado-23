@@ -46,7 +46,7 @@ def main(mode=None):
     # Purge data
     cleanDatabase.purgeData()
     # Show stats
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     print("\033c")
     print(some_art)
