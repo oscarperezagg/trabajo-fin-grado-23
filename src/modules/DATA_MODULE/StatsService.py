@@ -2,6 +2,17 @@ from src.lib import *
 from src.system.secret import *
 from src.system.logging_config import logger
 import logging
+from datetime import datetime
+
+
+some_art = """ _____ _____ ____   ____  _____      ____  _  _   
+|_   _|  ___/ ___| |___ \|___ /     |___ \| || |  
+  | | | |_ | |  _    __) | |_ \ _____ __) | || |_ 
+  | | |  _|| |_| |  / __/ ___) |_____/ __/|__   _|
+  |_| |_|   \____| |_____|____/     |_____|  |_|  
+  
+  
+  Made by: Óscar Pérez Arruti\n\n"""
 
 
 class Stats:
@@ -29,7 +40,7 @@ class Stats:
                 tempStringForStat = f"-- Descargados: {already_downloaded} / {total_assets} ({round(already_downloaded*100/total_assets, 2)}%)"
             
                 tempStats.append(
-                    f"|   Intervalo {interval}{' '*(8-len(interval))} {tempStringForStat} "
+                    f"    |   Intervalo {interval}{' '*(8-len(interval))} {tempStringForStat} "
                 )
             stats[api] = tempStats
 
@@ -57,16 +68,18 @@ class Stats:
         logger.setLevel(logging.DEBUG)
         # Hacer clear de la consola
         print("\033c")
-        print("")
-        logger.debug("[INICO] - ESTADISTICAS DE DESCARGA\n")
+        print(some_art)
+        # print the actual time
+        print(f"  FECHA: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+        print("  [INICO] - ESTADISTICAS DE DESCARGA\n")
         for api in api_names[1]:
-            logger.debug("ESTADISTICAS PARA LAS APIS: %s\n", api)
+            print(f"  ESTADISTICAS PARA LAS APIS: {api}\n")
             for stat in stats[api]:
-                logger.debug(stat)
+                print(f"{stat}")
             print("")
-        logger.debug("[FIN] - ESTADISTICAS\n")
+        print("  [FIN] - ESTADISTICAS\n")
 
-        logger.debug("[INICO] - ESTADISTICAS DE DATOS FUNDAMNETALES\n")
+        print("  [INICO] - ESTADISTICAS DE DATOS FUNDAMNETALES\n")
 
         # Obtener las estadísticas de los datos fundamentales
 
@@ -74,11 +87,11 @@ class Stats:
             percentil = round(
                 FundamentalDataStats[data_collection] * 100 / g_total_assets, 2
             )
-            logger.debug(
-                f"|   TIPO DE DATO: {data_collection} - {FundamentalDataStats[data_collection]}/{g_total_assets} ({percentil}%)"
+            print(
+                f"    |   TIPO DE DATO: {data_collection} - {FundamentalDataStats[data_collection]}/{g_total_assets} ({percentil}%)"
             )
         print()
-        logger.debug("[FIN] - ESTADISTICAS\n")
+        print("  [FIN] - ESTADISTICAS\n")
 
         logger.setLevel(logging.DEBUG)
 

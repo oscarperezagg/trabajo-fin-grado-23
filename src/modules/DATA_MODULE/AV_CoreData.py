@@ -71,7 +71,6 @@ class AV_CoreData:
                     )
 
                     # Añadir check para ver si ya está
-
                     res = AV_CoreData.__findAsset(asset, timestamp)
                     if res[0]:
                         continue
@@ -1070,6 +1069,42 @@ class AV_CoreData:
             element = conn.findByMultipleFields(custom=True, fields=fields)
             conn.close()
             return element
+        except Exception as e:
+            if conn:
+                conn.close()
+            logger.error("An error occurred: %s", str(e))
+            return (False, e)
+
+    def __getWrongAssets():
+        logger.debug("Obteniendo configuración de la API Alpha Vantaje")
+        config = AV_CoreData.__getConfig()
+        logger.debug("Devolviendo activos erróneos")
+        return config["wrong_assets"]
+
+    def __AddWrongAsset(asset):
+        conn = None
+        try:
+            wrong_assets = AV_CoreData.__getWrongAssets()
+            conn = MongoDbFunctions(
+                DATABASE["host"],
+                DATABASE["port"],
+                DATABASE["username"],
+                DATABASE["password"],
+                DATABASE["dbname"],
+                "config",
+            )
+            # Si asset no está contenido en wrong_assets lo añadimos
+            logger.debug("Añadiendo activo erróneo")
+            if asset not in wrong_assets:
+                wrong_assets.append(asset)
+                logger.debug("Actualizando activos erróneos")
+                conn.updateByField(
+                    "nombre_api", "alphavantage", {"wrong_assets": wrong_assets}
+                )
+                conn.close()
+            else:
+                logger.critical("Activo erróneo ya existente")
+            return
         except Exception as e:
             if conn:
                 conn.close()

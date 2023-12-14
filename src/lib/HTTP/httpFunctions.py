@@ -42,8 +42,6 @@ class HttpFunctions:
             parameters = HttpFunctions.buildParameterQuery(**parameters)
             url = url + parameters
 
-        logger.debug("Request URL with parameters: %s", url)
-
         if method == "GET":
             response = requests.get(url, proxies=proxy,timeout=60)
         elif method == "POST":
