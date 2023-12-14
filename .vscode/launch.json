@@ -6,7 +6,7 @@
     "configurations": [
 
         {
-            "name": "Python: Current File",
+            "name": "Run.py",
             "type": "python",
             "request": "launch",
             "program": "/Users/oscarperezarruti/Documents/Documentos/Repositorios/trabajo-fin-grado-23/run.py",

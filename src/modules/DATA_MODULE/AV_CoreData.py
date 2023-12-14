@@ -61,7 +61,13 @@ class AV_CoreData:
                 # Descargamos los assets
                 for index, asset in enumerate(assets):
                     cleanDatabase.purgeData()
-
+                    wrong_assets = AV_CoreData.__getWrongAssets()
+                    if asset in wrong_assets:
+                        logger.warning(
+                            "Asset %s is not available or complete on Alpha Vantaje API",
+                            asset,
+                        )
+                        continue
                     logger.info("Downloading %s data", asset)
                     logger.debug(
                         "Asset %s of %s (%.2f%%)",
@@ -234,6 +240,7 @@ class AV_CoreData:
                         logger.error(
                             f"Timestamp not found {year_month} on Alpha Vantaje API"
                         )
+                        AV_CoreData.__AddWrongAsset(asset)
                         return (True, "")
                     else:
                         return (False, data.get("Error Message"))
@@ -571,8 +578,24 @@ class AV_CoreData:
             )
             if not check:
                 AV_CoreData.__minuteCallTOZero()
-                logger.warning("Esperando 60 segundos...")
-                time.sleep(80)
+           
+                # Configura el tiempo inicial en 80 segundos
+                tiempo_restante = 80
+                logger.warning("Esperando 80 segundos...")
+                # Bucle que se ejecuta mientras el tiempo restante sea mayor que 0
+                while tiempo_restante > 0:
+                    # Mostrar el tiempo restante cada 10 segundos
+                    if tiempo_restante % 10 == 0:
+                        logger.warning(f"|    Tiempo restante: {tiempo_restante} segundos")
+                    
+                    # Esperar 1 segundo antes de actualizar el tiempo restante
+                    time.sleep(1)
+                    
+                    # Restar 1 segundo al tiempo restante
+                    tiempo_restante -= 1
+
+
+                
             return (True, "")
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
