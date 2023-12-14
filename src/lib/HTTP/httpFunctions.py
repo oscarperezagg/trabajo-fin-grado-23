@@ -36,7 +36,7 @@ class HttpFunctions:
               tuple: Una tupla que contiene un booleano (Verdadero si es exitoso, Falso en caso contrario) y el objeto de respuesta.
         """
 
-        logger.debug("Sending GET request to URL: %s", url)
+
 
         if parameters:
             parameters = HttpFunctions.buildParameterQuery(**parameters)
@@ -45,13 +45,13 @@ class HttpFunctions:
         logger.debug("Request URL with parameters: %s", url)
 
         if method == "GET":
-            response = requests.get(url, proxies=proxy)
+            response = requests.get(url, proxies=proxy,timeout=60)
         elif method == "POST":
             headers = {
                 "Content-Type": "application/json"
             }  # Set the Content-Type header to JSON
             response = requests.post(
-                url, data=json.dumps(payload), proxies=proxy, headers=headers
+                url, data=json.dumps(payload), proxies=proxy, headers=headers,timeout=60
             )
         else:
             logger.error("Invalid HTTP method")

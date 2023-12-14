@@ -23,6 +23,7 @@ some_art = """ _____ _____ ____   ____  _____      ____  _  _
 def startOrFinishTask():
     pass
 
+N = 100
 
 funciones_por_modo = {
     "computeAndResults": [lambda: signals.signals(computation.computeData()), False],
@@ -46,7 +47,7 @@ def main(mode=None):
     # Purge data
     cleanDatabase.purgeData()
     # Show stats
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     print("\033c")
     print(some_art)
@@ -56,13 +57,15 @@ def main(mode=None):
             # Debemos ejecutar la función en un hilo aparte
             updateStatus(True, mode)
             finished = False
-            while not finished:
+            iteration = 0
+            while not finished and iteration < N:
                 # Ejecutamos la función en un hilo aparte
                 funciones_por_modo[mode][0](mode)
                 # Comprobamos el estado de la tarea en la base de datos
                 finished = not getErrorStatus()
                 if not finished:
                     logger.error("Error controlado durante la tarea %s", mode)
+                iteration += 1
         else:
             funciones_por_modo[mode][0]()
     else:
