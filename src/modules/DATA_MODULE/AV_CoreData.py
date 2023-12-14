@@ -586,13 +586,14 @@ class AV_CoreData:
                 while tiempo_restante > 0:
                     # Mostrar el tiempo restante cada 10 segundos
                     if tiempo_restante % 10 == 0:
-                        logger.warning(f"|    Tiempo restante: {tiempo_restante} segundos")
+                        logger.info(f"|    Tiempo restante: {tiempo_restante} segundos")
                     
                     # Esperar 1 segundo antes de actualizar el tiempo restante
                     time.sleep(1)
                     
                     # Restar 1 segundo al tiempo restante
                     tiempo_restante -= 1
+                logger.warning("Espera finalizada")
 
 
                 
