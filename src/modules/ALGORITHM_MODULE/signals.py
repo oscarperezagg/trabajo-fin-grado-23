@@ -59,8 +59,15 @@ class signals:
                 df["minimunSignalPlusRsi"] = df["minimunSignal"] & df["rsiSignal"]
 
                 if df.iloc[-1]["minimunSignalPlusRsi"]:
-                    buy_signals[stock].append("- RSI por encima de 70")
-                    
+                    buy_signals[stock].append("- RSI por debajo de 30")
+
+                df["badRsiSignal"] = df.apply(lambda row: signals.badRsiSignal(row), axis=1)
+
+                df["minimunSignalPlusBadRsi"] = df["minimunSignal"] & df["badRsiSignal"]
+
+                if df.iloc[-1]["minimunSignalPlusBadRsi"]:
+                    buy_signals[stock].append("- [BAD] RSI por encima de 70")
+                
                 df.to_pickle(f"{signalsPath}/{stock}.pkl")
 
             except Exception as e:
@@ -83,6 +90,12 @@ class signals:
         return row["reportPriceMovement"] > 0
 
     def rsiSignal(row):
+        return row["RSI_14"] < 30
+
+    ######### BAD SIGNALS #########
+    
+    
+    def badRsiSignal(row):
         return row["RSI_14"] > 70
 
     #############################################################
@@ -114,7 +127,7 @@ class signals:
         ruta_temp_absoluta = os.path.abspath(ruta_temp)
 
         return ruta_temp_absoluta
-    
+
     def getTestingsPath():
         # Obtén la ruta del directorio actual donde se encuentra el archivo.py
         directorio_actual = os.path.dirname(os.path.abspath(__file__))
