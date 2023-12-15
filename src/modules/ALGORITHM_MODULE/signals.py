@@ -71,7 +71,7 @@ class signals:
         exit()
 
     def betaSignal(row, stock):
-        return row["beta"] > 1.4 or stock in FAANG
+        return row["beta_prev"] > 1.4 or stock in FAANG
 
     def movingAverageSignal200(row):
         return row["close"] > row["SMA_200"]
