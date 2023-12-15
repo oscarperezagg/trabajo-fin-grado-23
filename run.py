@@ -3,12 +3,18 @@ from src import iniciar_app, setup_app, migrate
 from src.system.logging_config import logger
 
 
-main_text = """Si el programa se ejecuta sin argumentos, se ejecutará en modo normal.\n
+main_text = """Si el programa se ejecuta sin argumentos, se ejecutará en modo normal.
+El modo normal actualiza los datos ya presentes en la base de datos y calcula 
+las señales. Lo hace de manera continuada hasta que paremos el programa.\n
+
 Opciones generales:
 
-    - full: Calcular sobre los últimos datos y obtener señales
+    - full: Calcular sobre los últimos datos disponibles y obtener señales 
     - compute: Calcular sobre los últimos datos
     - signals: Obtener señales sobre los últimos datos calculados
+    
+    Todas estas opciones no actualizan los datos con anterioridad. Mucho cuidado con estas
+    opciones, están pensadas para poder debugear el programa y no para su uso normal.
 
 Opciones de descarga de históricos:
 

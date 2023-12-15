@@ -26,6 +26,7 @@ def startOrFinishTask():
 N = 100
 
 funciones_por_modo = {
+    "": [lambda:Scheduling.schedule_normal_activities, True],
     "computeAndResults": [lambda: signals.signals(computation.computeData()), False],
     "compute": [computation.computeData, False],
     "lastResults": [lambda: signals.signals(computation.getValidStocks()), False],
@@ -68,18 +69,7 @@ def main(mode=None):
                 iteration += 1
         else:
             funciones_por_modo[mode][0]()
-    else:
-        logger.info("Starting application")
-        # Schedule the task of downloading the SPX
-        Scheduling.schedule_spx_download("7:00")
-        # Schedule the task of updating the SPX
-        Scheduling.schedule_spx_update("hour", 1)
-        # Schedule the task of downloading stocks
-        Scheduling.schedule_stock_download("8:00")
-        # Schedule the task of updating stocks
-        Scheduling.schedule_stocks_update("hour", 1)
-        # Schedule the task of getting company overview
-        Scheduling.schedule_download_fundamental_data("6:00")
+    
 
 
 def ejecutar_check_for_task():
