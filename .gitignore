@@ -9,3 +9,4 @@ test_*
 src/temp/*
 !src/temp/results
 src/temp/results/* 
+TestFiles
