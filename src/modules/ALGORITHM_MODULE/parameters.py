@@ -42,7 +42,6 @@ class parameters:
         # Calcular el SMA de 10 períodos utilizando la función talib.SMA
         sma = talib.SMA(data["close"], timeperiod=period)
         data[f"SMA_{period}"] = sma
-        
 
     #########################################################
     ######################  EMA  ############################
@@ -90,7 +89,6 @@ class parameters:
         )
         spx = parameters.formatData(spx)
         data = parameters.formatData(data)
-
         beta = data[(data["date"] >= f"{limit}-01-01")].copy()
 
         beta["beta"] = beta.apply(parameters.all_betas, args=(spx, data), axis=1)
