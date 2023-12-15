@@ -28,7 +28,7 @@ class AV_CoreData:
     ######################
 
     @staticmethod
-    def downloadAsset(mode):
+    def downloadAsset(mode, intervals=None):
         """
         Esta función descarga activos de cualquier tipo
 
@@ -43,8 +43,14 @@ class AV_CoreData:
 
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
-                # ELIMINAR
 
+                            
+                logger.info("Comprobando si hay que actualizar %s", timestamp)
+                if intervals and timestamp not in intervals:
+                    logger.info("No hay que actualizar %s", timestamp)
+                    continue
+                
+                
                 if timestamp != "15min":
                     continue
                 print("")
@@ -275,7 +281,7 @@ class AV_CoreData:
     ######################
 
     @staticmethod
-    def updateAssets(mode):
+    def updateAssets(mode,intervals=None):
         """
         Esta función activos de cualquier tipo
 
@@ -299,6 +305,13 @@ class AV_CoreData:
             timestamps = config["timestamps"]
 
             for timestamp in timestamps.keys():
+                
+                logger.info("Comprobando si hay que actualizar %s", timestamp)
+                if intervals and timestamp not in intervals:
+                    logger.info("No hay que actualizar %s", timestamp)
+                    continue
+                
+                
                 res = AV_CoreData.__assestToBeUpdated(timestamp)
                 if not res[0]:
                     return res
@@ -306,6 +319,13 @@ class AV_CoreData:
                 total_assets = len(assets)
 
                 for index, asset in enumerate(assets):
+                    wrong_assets = AV_CoreData.__getWrongAssets()
+                    if asset in wrong_assets:
+                        logger.warning(
+                            "Asset %s is not available or complete on Alpha Vantaje API",
+                            asset,
+                        )
+                        continue
                     logger.info(
                         "Asset %s of %s (%.2f%%)",
                         index + 1,
@@ -578,7 +598,7 @@ class AV_CoreData:
             )
             if not check:
                 AV_CoreData.__minuteCallTOZero()
-           
+
                 # Configura el tiempo inicial en 80 segundos
                 tiempo_restante = 80
                 logger.warning("Esperando 80 segundos...")
@@ -587,16 +607,14 @@ class AV_CoreData:
                     # Mostrar el tiempo restante cada 10 segundos
                     if tiempo_restante % 10 == 0:
                         logger.info(f"|    Tiempo restante: {tiempo_restante} segundos")
-                    
+
                     # Esperar 1 segundo antes de actualizar el tiempo restante
                     time.sleep(1)
-                    
+
                     # Restar 1 segundo al tiempo restante
                     tiempo_restante -= 1
                 logger.warning("Espera finalizada")
 
-
-                
             return (True, "")
         except Exception as e:
             logger.error("An error occurred: %s", str(e))

@@ -135,7 +135,7 @@ class TDA_CoreData:
             return (False, e)
 
     @staticmethod
-    def updateAssets(mode):
+    def updateAssets(mode,timestamp=None):
         """
         Esta función activos de cualquier tipo
 
