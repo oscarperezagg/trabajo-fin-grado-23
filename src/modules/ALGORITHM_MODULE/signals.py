@@ -55,15 +55,16 @@ class signals:
                     ]
 
                     if df.iloc[-1]["50smaSignal"]:
-                        buy_signals[stock].append(
-                            "- Por encima de la media de 200 y 50 días"
-                        )
+                        buy_signals[stock].append("- [GOOD] Above 50 SMA ")
+                    else:
+                        buy_signals[stock].append("- [BAD] Below 50 SMA ")
 
                     if df.iloc[-1]["rsiSignal"]:
-                        buy_signals[stock].append("- [GOOD] RSI por debajo de 30")
-
-                    if df.iloc[-1]["badRsiSignal"]:
-                        buy_signals[stock].append("- [BAD] RSI por encima de 70")
+                        buy_signals[stock].append("- [GOOD] RSI under 30")
+                    elif df.iloc[-1]["badRsiSignal"]:
+                        buy_signals[stock].append("- [BAD] RSI above 70")
+                    else:
+                        buy_signals[stock].append("- [NEUTRAL] RSI between 30 and 70")
 
                 df.to_pickle(f"{signalsPath}/{stock}.pkl")
 
