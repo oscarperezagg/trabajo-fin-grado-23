@@ -42,32 +42,29 @@ class signals:
                 df["minimunSignal"] = (
                     df["betaSignal"] & df["200smaSignal"] & df["reportSignal"]
                 )
-                df["superMinimunSignal"] = df["minimunSignal"] & df["50smaSignal"]
+
+                df["rsiSignal"] = df.apply(lambda row: signals.rsiSignal(row), axis=1)
+
+                df["badRsiSignal"] = df.apply(
+                    lambda row: signals.badRsiSignal(row), axis=1
+                )
 
                 if df.iloc[-1]["minimunSignal"]:
                     buy_signals[stock] = [
-                        "- Requerimiento básico cumplidos (Beta, 200 SMA, Presentación de resultados)"
+                        "- [BASIC] Beta > 1.4, Above 200 SMA, Movement after report positive"
                     ]
 
-                    if df.iloc[-1]["superMinimunSignal"]:
+                    if df.iloc[-1]["50smaSignal"]:
                         buy_signals[stock].append(
                             "- Por encima de la media de 200 y 50 días"
                         )
 
-                df["rsiSignal"] = df.apply(lambda row: signals.rsiSignal(row), axis=1)
+                    if df.iloc[-1]["rsiSignal"]:
+                        buy_signals[stock].append("- [GOOD] RSI por debajo de 30")
 
-                df["minimunSignalPlusRsi"] = df["minimunSignal"] & df["rsiSignal"]
+                    if df.iloc[-1]["badRsiSignal"]:
+                        buy_signals[stock].append("- [BAD] RSI por encima de 70")
 
-                if df.iloc[-1]["minimunSignalPlusRsi"]:
-                    buy_signals[stock].append("- RSI por debajo de 30")
-
-                df["badRsiSignal"] = df.apply(lambda row: signals.badRsiSignal(row), axis=1)
-
-                df["minimunSignalPlusBadRsi"] = df["minimunSignal"] & df["badRsiSignal"]
-
-                if df.iloc[-1]["minimunSignalPlusBadRsi"]:
-                    buy_signals[stock].append("- [BAD] RSI por encima de 70")
-                
                 df.to_pickle(f"{signalsPath}/{stock}.pkl")
 
             except Exception as e:
@@ -93,8 +90,7 @@ class signals:
         return row["RSI_14"] < 30
 
     ######### BAD SIGNALS #########
-    
-    
+
     def badRsiSignal(row):
         return row["RSI_14"] > 70
 
