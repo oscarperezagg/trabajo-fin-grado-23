@@ -2,9 +2,29 @@ import schedule
 import time
 from src.modules.DATA_MODULE import *
 from src.system.logging_config import logger
+from src.modules.ALGORITHM_MODULE import *
 
 
 class Scheduling:
+    @staticmethod
+    def schedule_normal_activities(mode):
+        n = 0
+        while True:
+            logger.info("updating SPX")
+            TDA_CoreData.updateAssets(mode)
+
+            if n == 10:
+                n = 0
+                logger.info("updating stocks for all intervals")
+                AV_CoreData.updateAssets(mode)
+            else:
+                logger.info("updating stocks for 15min and 1day")
+                AV_CoreData.updateAssets(mode, intervals=["1day", "15min"])
+
+            logger.info("Computing data and getting signals")
+            signals.signals(computation.computeData())
+            n += 1
+
     @staticmethod
     def schedule_spx_download(time):
         logger.info("Scheduling SPX download for " + time)
