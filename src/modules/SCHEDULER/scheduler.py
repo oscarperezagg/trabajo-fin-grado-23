@@ -9,6 +9,8 @@ class Scheduling:
     @staticmethod
     def schedule_normal_activities(mode):
         n = 0
+        logger.info("updating stocks for 1day and 1day")
+        AV_CoreData.updateAssets(mode, tradinghours=False, intervals=["1day"])
         while True:
             logger.info("updating SPX")
             TDA_CoreData.updateAssets(mode)
@@ -18,10 +20,8 @@ class Scheduling:
                 logger.info("updating stocks for all intervals")
                 AV_CoreData.updateAssets(mode)
             else:
-                logger.info("updating stocks for 15min and 1day")
-                AV_CoreData.updateAssets(
-                    mode, tradinghours=False, intervals=["1day", "15min"]
-                )
+                logger.info("updating stocks for 15min 1day")
+                AV_CoreData.updateAssets(mode, tradinghours=False, intervals=["15min"])
 
             logger.info("Computing data and getting signals")
             signals.signals(computation.computeData())

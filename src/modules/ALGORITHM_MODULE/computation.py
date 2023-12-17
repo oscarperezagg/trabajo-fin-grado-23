@@ -25,8 +25,6 @@ class computation:
         print("\n")
         storingThreats = []
         for stock in tqdm(validStocks, desc="Procesando stocks"):
-
-            print(f"Procesando {stock}")
             t = computation.computeSingleData(stock, path, testing)
             storingThreats.append(t)
         print("\n")

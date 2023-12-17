@@ -26,8 +26,7 @@ class testing:
             valid_stocks = computation.computeData(testing=True)
             
             logger.info("|   Computing signals")
-            # ELIMINAR
-            valid_stocks = ["AMD"]
+
             signals.signals(valid_stocks,testing=True)
 
         
