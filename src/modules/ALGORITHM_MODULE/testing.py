@@ -9,7 +9,7 @@ import os
 
 class testing:
     @staticmethod
-    def testingAndPerformance(mode, update=False, lastfiles=False):
+    def testingAndPerformance(mode, update=False, lastfiles=True):
         if update:
             logger.info("updating SPX")
             TDA_CoreData.updateAssets(mode, tradinghours=False)
@@ -24,19 +24,37 @@ class testing:
         if not lastfiles:
             logger.info("|   Computing data")
             valid_stocks = computation.computeData(testing=True)
-            
+
             logger.info("|   Computing signals")
 
-            signals.signals(valid_stocks,testing=True)
+            signals.signals(valid_stocks, testing=True)
 
-        
         # Ruta del directorio
         directory = signals.getTestingsPath()
 
         # Lista para guardar los nombres de archivos
         pkl_files = []
-        BALANCE = 1000
+        BALANCE_2021 = 0
+        BALANCE_2022 = 0
+        BALANCE_2023 = 0
+
         BALANCE_INICIAL = 1000
+
+        totals = {
+            "2023": {
+                "negative_operations": 0,
+                "positive_operations": 0,
+            },
+            "2022": {
+                "negative_operations": 0,
+                "positive_operations": 0,
+            },
+            "2021": {
+                "negative_operations": 0,
+                "positive_operations": 0,
+            },
+        }
+
         # Recorrer los archivos en el directorio
         for filename in os.listdir(directory):
             if filename.endswith(".pkl"):
@@ -45,29 +63,75 @@ class testing:
 
         # Iterar a través de los activos y procesarlos con una barra de progreso
         logger.info("Obteniendo resultados")
-        for pkl_file in tqdm(pkl_files, desc="Procesando"):
+        for pkl_file in tqdm(pkl_files, desc="|Procesando"):
             df = pd.read_pickle(f"{directory}/{pkl_file}")
-            resultados = testing.stockTesting(df)
+            (year2023, year2022, year2021, operaciones) = testing.stockTesting(df)
 
-            BALANCE += resultados
+            for year in ["2023", "2022", "2021"]:
+                totals[year]["negative_operations"] += operaciones[year][
+                    "negative_operations"
+                ]
+                totals[year]["positive_operations"] += operaciones[year][
+                    "positive_operations"
+                ]
 
-        crecimiento_porcentual = BALANCE * 100 / BALANCE_INICIAL
+            BALANCE_2023 += year2023
+            BALANCE_2022 += year2022
+            BALANCE_2021 += year2021
+
+        Balance_final = BALANCE_2021 + BALANCE_2022 + BALANCE_2023
         logger.info("Obteniendo resultados")
-        logger.info(
-            f"Balance: {round(BALANCE,2)} - ({round(crecimiento_porcentual,2)}%)"
+        logger.info(f"Balance: {round(Balance_final,2)}")
+
+        # Calculo de aciertos
+        good_ops_2023 = (
+            totals["2023"]["positive_operations"]
+            * 100
+            / (
+                totals["2023"]["positive_operations"]
+                + totals["2023"]["negative_operations"]
+            )
+        )
+        good_ops_2022 = (
+            totals["2022"]["positive_operations"]
+            * 100
+            / (
+                totals["2022"]["positive_operations"]
+                + totals["2022"]["negative_operations"]
+            )
+        )
+        good_ops_2021 = (
+            totals["2021"]["positive_operations"]
+            * 100
+            / (
+                totals["2021"]["positive_operations"]
+                + totals["2021"]["negative_operations"]
+            )
         )
 
+        logger.info(
+            f"--> 2021: {round(BALANCE_2021,2)} - {round(good_ops_2021,2)}% de acierto"
+        )
+        logger.info(
+            f"--> 2022: {round(BALANCE_2022,2)} - {round(good_ops_2022,2)}% de acierto"
+        )
+        logger.info(
+            f"--> 2023: {round(BALANCE_2023,2)} - {round(good_ops_2023,2)}% de acierto"
+        )
+        logger.setLevel("CRITICAL")
         updateStatus(False, mode)
+
+        logger.setLevel("DEBUG")
         exit()
 
     def stockTesting(df):
+        SIGNAL_FIELD = "minimunSignal"
         # Establecer 'date' como índice
         df.set_index("date", inplace=True)
 
         # Filtrar para quedarse con la primera ocurrencia de cada día
         df = df.groupby(df.index.date).first()
         # print(df.columns)
-        true_count = df["minimunSignal"].sum()
 
         # Función para verificar si la fecha es lunes o viernes
         def is_monday_or_friday(date):
@@ -124,13 +188,98 @@ class testing:
 
         # Filtrar el DataFrame original para obtener solo las filas con 'day_type' igual a 'Lunes'
         df_lunes = df[df["day_type"] == "Lunes"]
-        new_df_lunes = df_lunes[["growth", "minimunSignal"]].copy()
+        new_df_lunes = df_lunes[["open", "growth", SIGNAL_FIELD]].copy()
 
-        # Sumar todas las veces que la columna 'minimunSignal' es True
-        total_growth = new_df_lunes.loc[new_df_lunes["minimunSignal"], "growth"].sum()
+        # Multiplicar todos los valores en 'growth' por 2
+        new_df_lunes["growth"] = new_df_lunes["growth"] * 1
+
+        RISK = 0.02
+        ACCIONES = 1
+        new_df_lunes["growth"] = ACCIONES * new_df_lunes["growth"]
+        new_df_lunes["op_money"] = new_df_lunes["open"] * ACCIONES
+        new_df_lunes["growth"] = new_df_lunes.apply(
+            lambda row: -RISK * row["op_money"]
+            if row["growth"] < -RISK * row["op_money"]
+            else row["growth"],
+            axis=1,
+        )
+
+        new_df_lunes["year"] = new_df_lunes.index.year
+
+        # Filtrar y sumar para 2023
+        total_growth_2023 = new_df_lunes.loc[
+            (new_df_lunes["year"] == 2023) & (new_df_lunes[SIGNAL_FIELD]), "growth"
+        ].sum()
+
+        # Filtrar y sumar para 2022
+        total_growth_2022 = new_df_lunes.loc[
+            (new_df_lunes["year"] == 2022) & (new_df_lunes[SIGNAL_FIELD]), "growth"
+        ].sum()
+
+        # Filtrar y sumar para 2021
+        total_growth_2021 = new_df_lunes.loc[
+            (new_df_lunes["year"] == 2021) & (new_df_lunes[SIGNAL_FIELD]), "growth"
+        ].sum()
+
+        total_growth_2021 = round(total_growth_2021, 2)
+        total_growth_2022 = round(total_growth_2022, 2)
+        total_growth_2023 = round(total_growth_2023, 2)
+
+        # Calcular los totales
+        totals = {
+            "2023": {
+                "negative_operations": new_df_lunes.loc[
+                    (new_df_lunes["year"] == 2023)
+                    & (new_df_lunes[SIGNAL_FIELD])
+                    & (new_df_lunes["growth"] < 0),
+                    "growth",
+                ].shape[0],
+                "positive_operations": new_df_lunes.loc[
+                    (new_df_lunes["year"] == 2023)
+                    & (new_df_lunes[SIGNAL_FIELD])
+                    & (new_df_lunes["growth"] > 0),
+                    "growth",
+                ].shape[0],
+            },
+            "2022": {
+                "negative_operations": new_df_lunes.loc[
+                    (new_df_lunes["year"] == 2022)
+                    & (new_df_lunes[SIGNAL_FIELD])
+                    & (new_df_lunes["growth"] < 0),
+                    "growth",
+                ].shape[0],
+                "positive_operations": new_df_lunes.loc[
+                    (new_df_lunes["year"] == 2022)
+                    & (new_df_lunes[SIGNAL_FIELD])
+                    & (new_df_lunes["growth"] > 0),
+                    "growth",
+                ].shape[0],
+            },
+            "2021": {
+                "negative_operations": new_df_lunes.loc[
+                    (new_df_lunes["year"] == 2021)
+                    & (new_df_lunes[SIGNAL_FIELD])
+                    & (new_df_lunes["growth"] < 0),
+                    "growth",
+                ].shape[0],
+                "positive_operations": new_df_lunes.loc[
+                    (new_df_lunes["year"] == 2021)
+                    & (new_df_lunes[SIGNAL_FIELD])
+                    & (new_df_lunes["growth"] > 0),
+                    "growth",
+                ].shape[0],
+            },
+        }
+
+        # Ahora, 'totals' es un diccionario que contiene los totales de crecimiento positivo y negativo para cada año.
 
         # Mostrar el resultado
-        return round(total_growth, 2)
+        return (
+            total_growth_2023,
+            total_growth_2022,
+            total_growth_2021,
+            totals,
+        )
 
     def getTestingsPath():
         # Obtén la ruta del directorio actual donde se encuentra el archivo.py
