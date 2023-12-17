@@ -25,6 +25,8 @@ class computation:
         print("\n")
         storingThreats = []
         for stock in tqdm(validStocks, desc="Procesando stocks"):
+
+            print(f"Procesando {stock}")
             t = computation.computeSingleData(stock, path, testing)
             storingThreats.append(t)
         print("\n")
@@ -51,8 +53,6 @@ class computation:
 
         logger.debug("---> Aplicando las betas históricas a los datos de 15 minutos")
         parameters.apply_beta(data, betas)
-
-        data["beta_prev"] = data["beta"].shift(1)
 
         logger.debug(
             "---> Asignando la fecha de presentación de resultados a los datos de 15 minutos"

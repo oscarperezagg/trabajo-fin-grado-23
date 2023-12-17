@@ -26,11 +26,11 @@ def startOrFinishTask():
 N = 100
 
 funciones_por_modo = {
-    "": [lambda:Scheduling.schedule_normal_activities, True],
+    "main": [Scheduling.schedule_normal_activities, True],
     "computeAndResults": [lambda: signals.signals(computation.computeData()), False],
     "compute": [computation.computeData, False],
     "lastResults": [lambda: signals.signals(computation.getValidStocks()), False],
-    "testing": [lambda: computation.computeData(testing=True), False],
+    "testing": [lambda: testing.testingAndPerformance(mode="testing"), True,"Custom"],
     "stats": [lambda: Scheduling.schedule_stats("seconds", 10), False],
     "DownloadStocks": [AV_CoreData.downloadAsset, True],  # ------------
     "UpdateStocks": [AV_CoreData.updateAssets, True],  # ------------
@@ -60,8 +60,11 @@ def main(mode=None):
             finished = False
             iteration = 0
             while not finished and iteration < N:
-                # Ejecutamos la función en un hilo aparte
-                funciones_por_modo[mode][0](mode)
+                if len(funciones_por_modo[mode]) == 3:
+                    funciones_por_modo[mode][0]()
+                else:
+                    # Ejecutamos la función en un hilo aparte
+                    funciones_por_modo[mode][0](mode)
                 # Comprobamos el estado de la tarea en la base de datos
                 finished = not getErrorStatus()
                 if not finished:
@@ -80,6 +83,8 @@ def ejecutar_check_for_task():
 
 def iniciar_app(mode=None):
     print("")
+    if mode is None:
+        mode = "main"
     logger.debug("Crear un hilo para la lógica de la aplicación")
     app_thread = threading.Thread(
         target=main,

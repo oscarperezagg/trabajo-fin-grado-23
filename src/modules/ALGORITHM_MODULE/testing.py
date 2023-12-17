@@ -2,36 +2,42 @@ from src.modules.ALGORITHM_MODULE import *
 import pandas as pd
 from src.modules.DATA_MODULE import *
 from src.system.logging_config import logger
-from src.modules.ALGORITHM_MODULE import *
 
-BALANCE = 1000
-BALANCE_INICIAL = 1000
+
+import os
 
 
 class testing:
     @staticmethod
-    def testingAndPerformance(mode, update=True):
-        logger.info("updating SPX")
-        TDA_CoreData.updateAssets(mode)
+    def testingAndPerformance(mode, update=False, lastfiles=False):
+        if update:
+            logger.info("updating SPX")
+            TDA_CoreData.updateAssets(mode, tradinghours=False)
 
-        logger.info("updating stocks for 15min and 1day")
-        AV_CoreData.updateAssets(mode, intervals=["1day", "15min"])
+            logger.info("updating stocks for 15min and 1day")
+            AV_CoreData.updateAssets(
+                mode, tradinghours=False, intervals=["1day", "15min"]
+            )
 
-        logger.info("Computing data and getting signals")
-        valid_stocks = computation.computeData(testing=True)
-        signals.signals(valid_stocks)
+            logger.info("Computing data and getting signals")
 
-        logger.info("Calculado rendimiento de las señales")
-        testing.calculateSignalsPerformance()
+        if not lastfiles:
+            logger.info("|   Computing data")
+            valid_stocks = computation.computeData(testing=True)
+            
+            logger.info("|   Computing signals")
+            # ELIMINAR
+            valid_stocks = ["AMD"]
+            signals.signals(valid_stocks,testing=True)
 
-        import os
-
+        
         # Ruta del directorio
         directory = signals.getTestingsPath()
 
         # Lista para guardar los nombres de archivos
         pkl_files = []
-
+        BALANCE = 1000
+        BALANCE_INICIAL = 1000
         # Recorrer los archivos en el directorio
         for filename in os.listdir(directory):
             if filename.endswith(".pkl"):
@@ -39,15 +45,21 @@ class testing:
                 pkl_files.append(filename)
 
         # Iterar a través de los activos y procesarlos con una barra de progreso
+        logger.info("Obteniendo resultados")
         for pkl_file in tqdm(pkl_files, desc="Procesando"):
             df = pd.read_pickle(f"{directory}/{pkl_file}")
-            resultados = testing(df)
+            resultados = testing.stockTesting(df)
 
             BALANCE += resultados
 
         crecimiento_porcentual = BALANCE * 100 / BALANCE_INICIAL
+        logger.info("Obteniendo resultados")
+        logger.info(
+            f"Balance: {round(BALANCE,2)} - ({round(crecimiento_porcentual,2)}%)"
+        )
 
-        print(f"Balance: {round(BALANCE,2)} - ({round(crecimiento_porcentual,2)}%)")
+        updateStatus(False, mode)
+        exit()
 
     def stockTesting(df):
         # Establecer 'date' como índice
@@ -56,6 +68,7 @@ class testing:
         # Filtrar para quedarse con la primera ocurrencia de cada día
         df = df.groupby(df.index.date).first()
         # print(df.columns)
+        true_count = df["minimunSignal"].sum()
 
         # Función para verificar si la fecha es lunes o viernes
         def is_monday_or_friday(date):
@@ -71,15 +84,6 @@ class testing:
 
         # Aplicar la función al índice y crear una nueva columna 'day_type'
         df["day_type"] = df.index.map(is_monday_or_friday)
-
-        # print(df["day_type"])
-
-        num_mondays = len(df[df["day_type"] == "Lunes"])
-        num_fridays = len(df[df["day_type"] == "Viernes"])
-
-        # Mostrar el resultado
-        # print(f'Días que son Lunes: {num_mondays}')
-        # print(f'Días que son Viernes: {num_fridays}')
 
         df.dropna(subset=["day_type"], inplace=True)
         # print(df["day_type"])
@@ -105,9 +109,6 @@ class testing:
         # Eliminar las fechas marcadas del DataFrame
         df = df.drop(dates_to_remove)
 
-        # Mostrar el DataFrame resultante
-        # print(df.columns)
-
         # Iterar sobre las filas de 'Viernes'
         for index, row in df[df["day_type"] == "Lunes"].iterrows():
             # Calcular la fecha del lunes asociado
@@ -122,29 +123,12 @@ class testing:
                 # Asignar el valor de crecimiento a la fila de viernes
                 df.at[index, "growth"] = growth
 
-        # Mostrar el DataFrame resultante
-        # print(df.columns)
-        # print(df[['day_type', 'growth']])
-
         # Filtrar el DataFrame original para obtener solo las filas con 'day_type' igual a 'Lunes'
         df_lunes = df[df["day_type"] == "Lunes"]
-
         new_df_lunes = df_lunes[["growth", "minimunSignal"]].copy()
 
-        # Mostrar el nuevo DataFrame
-        # print(new_df_lunes)
-
         # Sumar todas las veces que la columna 'minimunSignal' es True
-        total_true = new_df_lunes["minimunSignal"].sum()
-
-        # Mostrar el resultado
-        # print("Número de veces que 'minimunSignal' es True:", total_true)
-
-        # Filtrar para obtener solo las filas donde 'minimunSignal' es True
-        df_true = new_df_lunes[new_df_lunes["minimunSignal"] == True]
-
-        # Sumar todas las veces que la columna 'minimunSignal' es True
-        total_growth = new_df_lunes["growth"].sum()
+        total_growth = new_df_lunes.loc[new_df_lunes["minimunSignal"], "growth"].sum()
 
         # Mostrar el resultado
         return round(total_growth, 2)
@@ -162,3 +146,52 @@ class testing:
         ruta_temp_absoluta = os.path.abspath(ruta_temp)
 
         return ruta_temp_absoluta
+
+
+def getStatus():
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Obteniendo elemento de configuración")
+        configDocu = conn.findByField("object", "error control")
+        logger.debug("Configuración obtenida")
+        conn.close()
+        return (True, configDocu)
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)
+
+
+def updateStatus(status, action):
+    config = getStatus()
+    conn = None
+    try:
+        conn = MongoDbFunctions(
+            DATABASE["host"],
+            DATABASE["port"],
+            DATABASE["username"],
+            DATABASE["password"],
+            DATABASE["dbname"],
+            "status",
+        )
+        logger.debug("Modificando elemento de configuración")
+        conn.updateByField(
+            "object", "error control", {"status": status, "action": action}
+        )
+        logger.debug("Configuración modificada")
+        conn.close()
+        return (True, "")
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error("An error occurred: %s", str(e))
+        return (False, e)

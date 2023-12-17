@@ -43,16 +43,11 @@ class AV_CoreData:
 
             # Más lógica de descarga aquí...
             for timestamp in timestamps:
-
-                            
                 logger.info("Comprobando si hay que actualizar %s", timestamp)
                 if intervals and timestamp not in intervals:
                     logger.info("No hay que actualizar %s", timestamp)
                     continue
-                
-                
-                if timestamp != "15min":
-                    continue
+
                 print("")
                 logger.info("Downloading data for %s", timestamp)
                 print("")
@@ -281,7 +276,7 @@ class AV_CoreData:
     ######################
 
     @staticmethod
-    def updateAssets(mode,intervals=None):
+    def updateAssets(mode, tradinghours=True, intervals=None):
         """
         Esta función activos de cualquier tipo
 
@@ -293,7 +288,7 @@ class AV_CoreData:
         start_datetime, end_datetime = AV_CoreData.__trading_hours()
         now = datetime.now()
 
-        if not (start_datetime <= now <= end_datetime):
+        if tradinghours and not (start_datetime <= now <= end_datetime):
             logger.info("No estamos en horario de trading")
             logger.info("[END] Updating assets with Alpha Vantaje API")
 
@@ -305,13 +300,11 @@ class AV_CoreData:
             timestamps = config["timestamps"]
 
             for timestamp in timestamps.keys():
-                
                 logger.info("Comprobando si hay que actualizar %s", timestamp)
                 if intervals and timestamp not in intervals:
                     logger.info("No hay que actualizar %s", timestamp)
                     continue
-                
-                
+
                 res = AV_CoreData.__assestToBeUpdated(timestamp)
                 if not res[0]:
                     return res
@@ -359,6 +352,8 @@ class AV_CoreData:
 
                         if res[0]:
                             logger.info("Asset downloaded successfully")
+                    else:
+                        logger.info("No hay que actualizar %s", asset["symbol"])
 
         except Exception as e:
             logger.error("An error occurred: %s", str(e))
@@ -606,7 +601,9 @@ class AV_CoreData:
                 while tiempo_restante > 0:
                     # Mostrar el tiempo restante cada 10 segundos
                     if tiempo_restante % 10 == 0:
-                        logger.debug(f"|    Tiempo restante: {tiempo_restante} segundos")
+                        logger.debug(
+                            f"|    Tiempo restante: {tiempo_restante} segundos"
+                        )
 
                     # Esperar 1 segundo antes de actualizar el tiempo restante
                     time.sleep(1)
@@ -1048,8 +1045,19 @@ class AV_CoreData:
                 DATABASE["dbname"],
                 "CoreData",
             )
+
+            # Calcular la fecha y hora actual menos 30 minutos
+            fecha_actual = datetime.datetime.now()
+            fecha_hace_30_minutos = fecha_actual - datetime.timedelta(minutes=30)
+
+            # Filtro modificado
+            fields = {
+                "interval": interval,
+                "symbol": {"$ne": "SPX"},
+                "last_modified": {"$gte": fecha_hace_30_minutos},
+            }
             # Realizar la consulta y proyectar solo el campo "symbol"
-            fields = {"interval": interval, "symbol": {"$ne": "SPX"}}
+            # Old = fields = {"interval": interval, "symbol": {"$ne": "SPX"}}
             projection = {
                 "interval": 1,
                 "symbol": 1,

@@ -16,7 +16,7 @@ class signals:
     ############################################################
 
     @staticmethod
-    def signals(validStocks):
+    def signals(validStocks,testing=False):
         path = signals.getTempPath()
         signalsPath = signals.getTestingsPath()
         print("\n")
@@ -69,14 +69,15 @@ class signals:
                 df.to_pickle(f"{signalsPath}/{stock}.pkl")
 
             except Exception as e:
+                print(f"Error procesando {e}")
                 pass
         print("\n")
 
-        signals.createResultsTable(buy_signals)
-        exit()
+        if not testing:
+            signals.createResultsTable(buy_signals)
 
     def betaSignal(row, stock):
-        return row["beta_prev"] > 1.4 or stock in FAANG
+        return row["beta"] > 1.4 or stock in FAANG
 
     def movingAverageSignal200(row):
         return row["close"] > row["SMA_200"]

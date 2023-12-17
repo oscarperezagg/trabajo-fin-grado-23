@@ -1,5 +1,7 @@
 import pandas as pd
 import pandas_ta as ta
+import time
+
 import talib
 from src.lib.MONGODB import *
 from src.system.secret import *
@@ -123,11 +125,25 @@ class parameters:
         return beta
 
     def apply_beta(data, betas):
-        # Crear un diccionario que mapee las fechas de betas a las betas correspondientes
-        betas_dict = dict(zip(betas["date"].dt.normalize(), betas["beta"]))
+    
 
-        # Aplicar las betas al DataFrame data utilizando las fechas de data sin normalizar
-        data["beta"] = data["date"].map(lambda x: betas_dict.get(x.normalize(), 0))
+        # Luego resta un día para obtener el día anterior
+        data["date_normalized"] = data["date"].dt.normalize() - pd.Timedelta(days=1)
+
+        # Utilizar merge_asof para encontrar la fila en 'betas' que tenga la fecha justo anterior
+        # a cada entrada en 'data_normalized' de 'data'
+        merged_data = pd.merge_asof(
+            data,
+            betas,
+            left_on="date_normalized",
+            right_on="date",
+            direction="backward",
+        )
+        merged_data.set_index('date_x', inplace=True)
+        # Crear la nueva columna 'beta' en 'data' con los valores correspondientes
+        data["beta"] = merged_data["beta"]
+
+
 
     ##############################################################
     ######################  Earnings  ############################

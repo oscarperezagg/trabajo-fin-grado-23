@@ -19,7 +19,9 @@ class Scheduling:
                 AV_CoreData.updateAssets(mode)
             else:
                 logger.info("updating stocks for 15min and 1day")
-                AV_CoreData.updateAssets(mode, intervals=["1day", "15min"])
+                AV_CoreData.updateAssets(
+                    mode, tradinghours=False, intervals=["1day", "15min"]
+                )
 
             logger.info("Computing data and getting signals")
             signals.signals(computation.computeData())

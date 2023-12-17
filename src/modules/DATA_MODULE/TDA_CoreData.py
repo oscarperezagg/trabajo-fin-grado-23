@@ -135,7 +135,7 @@ class TDA_CoreData:
             return (False, e)
 
     @staticmethod
-    def updateAssets(mode,timestamp=None):
+    def updateAssets(mode,tradinghours=True,timestamp=None):
         """
         Esta función activos de cualquier tipo
 
@@ -147,7 +147,7 @@ class TDA_CoreData:
         start_datetime, end_datetime = TDA_CoreData.__trading_hours()
         now = datetime.now()
 
-        if not (start_datetime <= now <= end_datetime):
+        if tradinghours and not (start_datetime <= now <= end_datetime):
             logger.info("No estamos en horario de trading")
             logger.info("[END] Updating assets with Twelve Data API")
 
