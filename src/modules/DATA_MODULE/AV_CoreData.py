@@ -1048,13 +1048,13 @@ class AV_CoreData:
 
             # Calcular la fecha y hora actual menos 30 minutos
             fecha_actual = datetime.now()
-            fecha_hace_30_minutos = fecha_actual - datetime.timedelta(minutes=30)
+            fecha_hace_30_minutos = fecha_actual - timedelta(minutes=30)
 
             # Filtro modificado
             fields = {
                 "interval": interval,
                 "symbol": {"$ne": "SPX"},
-                "last_modified": {"$gte": fecha_hace_30_minutos},
+                "last_modified": {"$lt": fecha_hace_30_minutos},
             }
             # Realizar la consulta y proyectar solo el campo "symbol"
             # Old = fields = {"interval": interval, "symbol": {"$ne": "SPX"}}
