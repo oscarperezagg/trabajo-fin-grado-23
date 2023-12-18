@@ -1069,6 +1069,7 @@ class AV_CoreData:
                 fields, get_all=True, custom=True, proyeccion=projection
             )
             if not res:
+                logger.critical("No hay activos que actualizar")
                 return (True, [])
 
             conn.close()
