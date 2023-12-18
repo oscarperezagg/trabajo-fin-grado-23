@@ -1047,7 +1047,7 @@ class AV_CoreData:
             )
 
             # Calcular la fecha y hora actual menos 30 minutos
-            fecha_actual = datetime.datetime.now()
+            fecha_actual = datetime.now()
             fecha_hace_30_minutos = fecha_actual - datetime.timedelta(minutes=30)
 
             # Filtro modificado
