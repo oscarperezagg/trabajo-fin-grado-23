@@ -1072,7 +1072,7 @@ class AV_CoreData:
                 return (True, [])
 
             conn.close()
-            logger.debug(f"Activos a actualizar: {len(res)}")
+            logger.warning(f"Activos a actualizar: {len(res)}")
             return (True, res)
         except Exception as e:
             if conn:
