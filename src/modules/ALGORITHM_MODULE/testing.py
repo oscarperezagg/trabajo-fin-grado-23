@@ -3,6 +3,7 @@ import pandas as pd
 from src.modules.DATA_MODULE import *
 from src.system.logging_config import logger
 
+N = 100
 
 import os
 
@@ -12,13 +13,34 @@ class testing:
     def testingAndPerformance(mode, update=False, lastfiles=True):
         if update:
             logger.info("updating SPX")
-            TDA_CoreData.updateAssets(mode, tradinghours=False)
 
-            logger.info("updating stocks for 15min and 1day")
-            AV_CoreData.updateAssets(
-                mode, tradinghours=False, intervals=["1day", "15min"]
-            )
+            updateStatus(True, "UpdateSPX")
+            finished = False
+            iteration = 0
+            while not finished and iteration < N:
+                # Ejecutamos la función en un hilo aparte
+                TDA_CoreData.updateAssets("UpdateSPX", tradinghours=False)
+                # Comprobamos el estado de la tarea en la base de datos
+                finished = not getErrorStatus()
+                if not finished:
+                    logger.error("Error controlado durante la tarea %s", mode)
+                iteration += 1
 
+            logger.info("updating stocks for 1day")
+
+            updateStatus(True, "UpdateStocks")
+            finished = False
+            iteration = 0
+            while not finished and iteration < N:
+                # Ejecutamos la función en un hilo aparte
+                AV_CoreData.updateAssets(
+                    "UpdateStocks", tradinghours=False, intervals=["1day"]
+                )
+                # Comprobamos el estado de la tarea en la base de datos
+                finished = not getErrorStatus()
+                if not finished:
+                    logger.error("Error controlado durante la tarea %s", mode)
+                iteration += 1
             logger.info("Computing data and getting signals")
 
         if not lastfiles:
@@ -31,255 +53,248 @@ class testing:
 
         # Ruta del directorio
         directory = signals.getTestingsPath()
-
         # Lista para guardar los nombres de archivos
         pkl_files = []
-        BALANCE_2021 = 0
-        BALANCE_2022 = 0
-        BALANCE_2023 = 0
-
-        BALANCE_INICIAL = 1000
-
-        totals = {
-            "2023": {
-                "negative_operations": 0,
-                "positive_operations": 0,
-            },
-            "2022": {
-                "negative_operations": 0,
-                "positive_operations": 0,
-            },
-            "2021": {
-                "negative_operations": 0,
-                "positive_operations": 0,
-            },
-        }
-
         # Recorrer los archivos en el directorio
         for filename in os.listdir(directory):
             if filename.endswith(".pkl"):
                 # Añadir el archivo a la lista si termina en .pkl
                 pkl_files.append(filename)
 
-        # Iterar a través de los activos y procesarlos con una barra de progreso
+        standard_and_poors = computation.standard_and_poors()
+
+        aciertos_total = 0
+        evaluados_total = 0
+        error_medio_total = 0.0
         logger.info("Obteniendo resultados")
         for pkl_file in tqdm(pkl_files, desc="|Procesando"):
             df = pd.read_pickle(f"{directory}/{pkl_file}")
-            (year2023, year2022, year2021, operaciones) = testing.stockTesting(df)
+            calculated_stock = testing.stockTesting(df, standard_and_poors)
+            if calculated_stock is False:
+                continue
+            # Calculamos el porcentaje de aciertos
+            aciertos = calculated_stock[calculated_stock["mismo_signo"] == True].shape[
+                0
+            ]
+            total = calculated_stock.shape[0]
+            # Calculamos error medio para los aciertos
+            if aciertos != 0:
+                error_medio = (
+                    calculated_stock[calculated_stock["mismo_signo"] == True][
+                        "abs_error"
+                    ].sum()
+                    / aciertos
+                )
 
-            for year in ["2023", "2022", "2021"]:
-                totals[year]["negative_operations"] += operaciones[year][
-                    "negative_operations"
-                ]
-                totals[year]["positive_operations"] += operaciones[year][
-                    "positive_operations"
-                ]
+                aciertos_total += aciertos
+                error_medio_total = (error_medio_total + error_medio) / 2
 
-            BALANCE_2023 += year2023
-            BALANCE_2022 += year2022
-            BALANCE_2021 += year2021
+            evaluados_total += total
 
-        Balance_final = BALANCE_2021 + BALANCE_2022 + BALANCE_2023
-        logger.info("Obteniendo resultados")
-        logger.info(f"Balance: {round(Balance_final,2)}")
-
-        # Calculo de aciertos
-        good_ops_2023 = (
-            totals["2023"]["positive_operations"]
-            * 100
-            / (
-                totals["2023"]["positive_operations"]
-                + totals["2023"]["negative_operations"]
-            )
-        )
-        good_ops_2022 = (
-            totals["2022"]["positive_operations"]
-            * 100
-            / (
-                totals["2022"]["positive_operations"]
-                + totals["2022"]["negative_operations"]
-            )
-        )
-        good_ops_2021 = (
-            totals["2021"]["positive_operations"]
-            * 100
-            / (
-                totals["2021"]["positive_operations"]
-                + totals["2021"]["negative_operations"]
-            )
-        )
-
-        logger.info(
-            f"--> 2021: {round(BALANCE_2021,2)} - {round(good_ops_2021,2)}% de acierto"
-        )
-        logger.info(
-            f"--> 2022: {round(BALANCE_2022,2)} - {round(good_ops_2022,2)}% de acierto"
-        )
-        logger.info(
-            f"--> 2023: {round(BALANCE_2023,2)} - {round(good_ops_2023,2)}% de acierto"
-        )
-        logger.setLevel("CRITICAL")
+        logger.info("Resultados obtenidos")
+        logger.info("Aciertos: %s", aciertos_total)
+        logger.info("Evaluados: %s", evaluados_total)
+        logger.info("Error medio: %s", error_medio_total)
         updateStatus(False, mode)
 
         logger.setLevel("DEBUG")
         exit()
 
-    def stockTesting(df):
-        SIGNAL_FIELD = "minimunSignal"
-        # Establecer 'date' como índice
-        df.set_index("date", inplace=True)
+    def stockTesting(stock, spx):
+        stock = testing.valid_monday_friday(stock)
 
-        # Filtrar para quedarse con la primera ocurrencia de cada día
-        df = df.groupby(df.index.date).first()
-        # print(df.columns)
+        if stock.shape[0] == 0:
+            return False
 
-        # Función para verificar si la fecha es lunes o viernes
-        def is_monday_or_friday(date):
-            if date.weekday() == 0:  # 0 representa el lunes
-                return "Lunes"
-            elif date.weekday() == 4:  # 4 representa el viernes
-                return "Viernes"
-            else:
-                return None  # En caso de que no sea lunes ni viernes
+        filtered_spx = testing.format_spx(spx, stock)
 
-        # Asegurarse de que el índice es de tipo datetime
-        df.index = pd.to_datetime(df.index)
+        if filtered_spx.shape[0] != stock.shape[0]:
+            return False
 
-        # Aplicar la función al índice y crear una nueva columna 'day_type'
-        df["day_type"] = df.index.map(is_monday_or_friday)
+        # Calculamos el crecimiento para todas las fechas lunes
+        calculated_stock = stock.copy()
 
-        df.dropna(subset=["day_type"], inplace=True)
-        # print(df["day_type"])
+        # Create a new column 'crecimiento' initialized with None
+        calculated_stock["crecimiento"] = None
 
-        dates_to_remove = []
+        # Loop over the DataFrame
+        for index, row in calculated_stock.iterrows():
+            if row["es_lunes"]:
+                # Get the 'ultimo_dia_semana' date for the current row
+                last_day_date = row["ultimo_dia_semana"]
 
-        # Iterar sobre el DataFrame
-        for index, row in df.iterrows():
-            if row["day_type"] == "Lunes":
-                # Buscar la siguiente fecha que sea viernes, considerando también si hay otro lunes en medio
-                for next_index, next_row in df[(df.index > index)].iterrows():
-                    if next_row["day_type"] == "Lunes":
-                        # Si se encuentra otro lunes antes, eliminar solo este lunes
-                        dates_to_remove.append(index)
-                        break
-                    elif next_row["day_type"] == "Viernes":
-                        # Si se encuentra un viernes, verificar la diferencia de días
-                        if (next_index - index).days != 4:
-                            # Si la diferencia de días no es cuatro, eliminar ambos
-                            dates_to_remove.extend([index, next_index])
-                        break
+                # Find the corresponding Friday's row
+                friday_row = calculated_stock[calculated_stock["date"] == last_day_date]
 
-        # Eliminar las fechas marcadas del DataFrame
-        df = df.drop(dates_to_remove)
+                if not friday_row.empty:
+                    # Calculate the percentage growth
+                    open_value = row["open"]
+                    close_value = friday_row.iloc[0]["close"]
+                    growth = ((close_value - open_value) / open_value) * 100
 
-        # Iterar sobre las filas de 'Viernes'
-        for index, row in df[df["day_type"] == "Lunes"].iterrows():
-            # Calcular la fecha del lunes asociado
-            friday_date = index + pd.Timedelta(days=4)
+                    # Assign the calculated growth to the 'crecimiento' column
+                    calculated_stock.at[index, "crecimiento"] = growth
+                else:
+                    logger.critical("Falta un viernes en el dataframe")
 
-            # Verificar si el lunes existe en el DataFrame
-            if friday_date in df.index:
-                friday_row = df.loc[friday_date]
+        # Create a new column 'crecimiento' in filtered_spx
+        filtered_spx["crecimiento"] = None
 
-                growth = friday_row["close"] - row["close"]
+        # Loop over the DataFrame
+        for index, row in filtered_spx.iterrows():
+            if row["es_lunes"]:
+                # Get the 'ultimo_dia_semana' date for the current row
+                last_day_date = row["ultimo_dia_semana"]
 
-                # Asignar el valor de crecimiento a la fila de viernes
-                df.at[index, "growth"] = growth
+                # Find the corresponding Friday's row
+                friday_row = filtered_spx[filtered_spx["date"] == last_day_date]
 
-        # Filtrar el DataFrame original para obtener solo las filas con 'day_type' igual a 'Lunes'
-        df_lunes = df[df["day_type"] == "Lunes"]
-        new_df_lunes = df_lunes[["open", "growth", SIGNAL_FIELD]].copy()
+                if not friday_row.empty:
+                    # Calculate the percentage growth
+                    open_value = row["open"]
+                    close_value = friday_row.iloc[0]["close"]
+                    growth = ((close_value - open_value) / open_value) * 100
+                    if growth == 0:
+                        logger.critical("Growth is 0")
+                    # Assign the calculated growth to the 'crecimiento' column
+                    filtered_spx.at[index, "crecimiento"] = growth
+                else:
+                    logger.critical("Falta un viernes en el dataframe")
 
-        # Multiplicar todos los valores en 'growth' por 2
-        new_df_lunes["growth"] = new_df_lunes["growth"] * 1
+        calculated_stock = calculated_stock.copy()
+        calculated_stock["crecimiento_spx"] = 0.0
+        calculated_stock["mismo_signo"] = False
+        calculated_stock["abs_error"] = 0.0
+        calculated_stock["abs_pertecentaje_error"] = 0.0
 
-        RISK = 0.02
-        ACCIONES = 1
-        new_df_lunes["growth"] = ACCIONES * new_df_lunes["growth"]
-        new_df_lunes["op_money"] = new_df_lunes["open"] * ACCIONES
-        new_df_lunes["growth"] = new_df_lunes.apply(
-            lambda row: -RISK * row["op_money"]
-            if row["growth"] < -RISK * row["op_money"]
-            else row["growth"],
-            axis=1,
+        # Loop over the DataFrame
+        for index, row in calculated_stock.iterrows():
+            if row["es_lunes"]:
+                # Get the 'ultimo_dia_semana' date for the current row
+                stock_monday = row["date"]
+
+                # Find the corresponding Friday's row
+                spx_monday = filtered_spx[filtered_spx["date"] == stock_monday]
+
+                if not spx_monday.empty:
+                    crecimiento_stock = row["crecimiento"]
+                    crecimiento_spx = spx_monday.iloc[0]["crecimiento"]
+                    calculated_stock.at[index, "crecimiento_spx"] = float(
+                        crecimiento_spx
+                    )
+                    # Si son del mismo signo
+                    if (crecimiento_stock > 0 and crecimiento_spx > 0) or (
+                        crecimiento_stock < 0 and crecimiento_spx < 0
+                    ):
+                        calculated_stock.at[index, "mismo_signo"] = True
+                        # Calculamos diferencia entre crecimiento stock y spx
+                        calculated_stock.at[index, "abs_error"] = float(
+                            abs(crecimiento_stock - crecimiento_spx)
+                        )
+                        calculated_stock.at[index, "abs_pertecentaje_error"] = float(
+                            abs(crecimiento_stock - crecimiento_spx)
+                            / abs(crecimiento_spx)
+                            * 100
+                        )
+
+                else:
+                    logger.critical("Falta un lunes en el dataframe")
+
+        return calculated_stock
+
+    def format_spx(spx, stock):
+        # Filtramos spx por las fechas de la columna date de stock
+        # Step 1: Extract unique dates from filtered_stock
+        unique_dates = stock["date"].unique()
+
+        # Step 2: Filter spx DataFrame using these dates
+        filtered_spx = spx[spx["date"].isin(unique_dates)]
+        filtered_spx = filtered_spx.copy()
+        filtered_spx.loc[:, "es_lunes"] = filtered_spx["date"].dt.day_name() == "Monday"
+        filtered_spx.loc[:, "es_viernes"] = (
+            filtered_spx["date"].dt.day_name() == "Friday"
         )
 
-        new_df_lunes["year"] = new_df_lunes.index.year
-
-        # Filtrar y sumar para 2023
-        total_growth_2023 = new_df_lunes.loc[
-            (new_df_lunes["year"] == 2023) & (new_df_lunes[SIGNAL_FIELD]), "growth"
-        ].sum()
-
-        # Filtrar y sumar para 2022
-        total_growth_2022 = new_df_lunes.loc[
-            (new_df_lunes["year"] == 2022) & (new_df_lunes[SIGNAL_FIELD]), "growth"
-        ].sum()
-
-        # Filtrar y sumar para 2021
-        total_growth_2021 = new_df_lunes.loc[
-            (new_df_lunes["year"] == 2021) & (new_df_lunes[SIGNAL_FIELD]), "growth"
-        ].sum()
-
-        total_growth_2021 = round(total_growth_2021, 2)
-        total_growth_2022 = round(total_growth_2022, 2)
-        total_growth_2023 = round(total_growth_2023, 2)
-
-        # Calcular los totales
-        totals = {
-            "2023": {
-                "negative_operations": new_df_lunes.loc[
-                    (new_df_lunes["year"] == 2023)
-                    & (new_df_lunes[SIGNAL_FIELD])
-                    & (new_df_lunes["growth"] < 0),
-                    "growth",
-                ].shape[0],
-                "positive_operations": new_df_lunes.loc[
-                    (new_df_lunes["year"] == 2023)
-                    & (new_df_lunes[SIGNAL_FIELD])
-                    & (new_df_lunes["growth"] > 0),
-                    "growth",
-                ].shape[0],
-            },
-            "2022": {
-                "negative_operations": new_df_lunes.loc[
-                    (new_df_lunes["year"] == 2022)
-                    & (new_df_lunes[SIGNAL_FIELD])
-                    & (new_df_lunes["growth"] < 0),
-                    "growth",
-                ].shape[0],
-                "positive_operations": new_df_lunes.loc[
-                    (new_df_lunes["year"] == 2022)
-                    & (new_df_lunes[SIGNAL_FIELD])
-                    & (new_df_lunes["growth"] > 0),
-                    "growth",
-                ].shape[0],
-            },
-            "2021": {
-                "negative_operations": new_df_lunes.loc[
-                    (new_df_lunes["year"] == 2021)
-                    & (new_df_lunes[SIGNAL_FIELD])
-                    & (new_df_lunes["growth"] < 0),
-                    "growth",
-                ].shape[0],
-                "positive_operations": new_df_lunes.loc[
-                    (new_df_lunes["year"] == 2021)
-                    & (new_df_lunes[SIGNAL_FIELD])
-                    & (new_df_lunes["growth"] > 0),
-                    "growth",
-                ].shape[0],
-            },
-        }
-
-        # Ahora, 'totals' es un diccionario que contiene los totales de crecimiento positivo y negativo para cada año.
-
-        # Mostrar el resultado
-        return (
-            total_growth_2023,
-            total_growth_2022,
-            total_growth_2021,
-            totals,
+        filtered_spx = filtered_spx.copy()
+        # Calcula el primer día (lunes) y último día (viernes) de cada semana
+        filtered_spx["primer_dia_semana"] = filtered_spx["date"] - pd.to_timedelta(
+            filtered_spx["date"].dt.dayofweek, unit="D"
         )
+        filtered_spx["ultimo_dia_semana"] = filtered_spx[
+            "primer_dia_semana"
+        ] + pd.DateOffset(days=4)
+        return filtered_spx
+
+    def valid_monday_friday(stock):
+        stock = stock.copy()
+        # Calcula el primer día (lunes) y último día (viernes) de cada semana
+        stock["primer_dia_semana"] = stock["date"] - pd.to_timedelta(
+            stock["date"].dt.dayofweek, unit="D"
+        )
+        stock["ultimo_dia_semana"] = stock["primer_dia_semana"] + pd.DateOffset(days=4)
+
+        filtered_stock = stock[
+            (stock["date"] == stock["primer_dia_semana"])
+            | (stock["date"] == stock["ultimo_dia_semana"])
+        ]
+        filtered_stock = filtered_stock.copy()
+
+        ## Define the function 'existe_otra_fila'
+        def existe_otra_fila(fecha, columna):
+            return filtered_stock[(filtered_stock[columna] == fecha)].shape[0] > 0
+
+        # Apply the logic for 'es_lunes' and 'es_viernes'
+        filtered_stock["es_lunes"] = filtered_stock["date"].dt.day_name() == "Monday"
+        filtered_stock["es_viernes"] = filtered_stock["date"].dt.day_name() == "Friday"
+
+        # Add conditions for 'eliminar_lunes' and 'eliminar_viernes'
+        filtered_stock["eliminar_lunes"] = filtered_stock[
+            "es_lunes"
+        ] & filtered_stock.apply(
+            lambda row: not existe_otra_fila(row["ultimo_dia_semana"], "date"), axis=1
+        )
+        filtered_stock["eliminar_viernes"] = filtered_stock[
+            "es_viernes"
+        ] & filtered_stock.apply(
+            lambda row: not existe_otra_fila(row["primer_dia_semana"], "date"), axis=1
+        )
+
+        # Drop the rows marked for elimination
+        filtered_stock = filtered_stock[
+            ~(filtered_stock["eliminar_lunes"] | filtered_stock["eliminar_viernes"])
+        ]
+
+        # Drop the columns used for marking rows
+        filtered_stock.drop(
+            columns=["eliminar_lunes", "eliminar_viernes"], inplace=True
+        )
+        
+        
+        filtered_stock["finalSignal"] = (
+            filtered_stock["minimunSignal"]
+        )
+        # Step 1: Filter rows where 'minimumSignal' is False and 'es_lunes' is True
+        rows_to_remove = filtered_stock[
+            (filtered_stock["finalSignal"] == False)
+            & (filtered_stock["es_lunes"] == True)
+        ]
+
+        # Step 2: Extract dates from 'ultimo_dia_semana'
+        dates_to_remove = rows_to_remove["ultimo_dia_semana"]
+
+        # Step 3: Remove rows based on condition
+        # Step 3: Remove rows based on condition
+        filtered_stock = filtered_stock[
+            ~(
+                (filtered_stock["finalSignal"] == False)
+                & (filtered_stock["es_lunes"] == True)
+            )
+        ]
+
+        # Step 4: Remove additional rows based on dates in dates_to_remove
+        filtered_stock = filtered_stock[~filtered_stock["date"].isin(dates_to_remove)]
+
+        return filtered_stock
 
     def getTestingsPath():
         # Obtén la ruta del directorio actual donde se encuentra el archivo.py
@@ -317,6 +332,14 @@ def getStatus():
             conn.close()
         logger.error("An error occurred: %s", str(e))
         return (False, e)
+
+
+def getErrorStatus():
+    status = getStatus()
+    if status[0]:
+        return status[1]["status"]
+    else:
+        logger.critical("An error ocurred while getting error control document")
 
 
 def updateStatus(status, action):

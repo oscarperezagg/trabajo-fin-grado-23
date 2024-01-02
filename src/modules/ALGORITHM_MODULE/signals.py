@@ -16,7 +16,7 @@ class signals:
     ############################################################
 
     @staticmethod
-    def signals(validStocks,testing=False):
+    def signals(validStocks, testing=False):
         path = signals.getTempPath()
         signalsPath = signals.getTestingsPath()
         print("\n")
@@ -48,6 +48,16 @@ class signals:
                 df["badRsiSignal"] = df.apply(
                     lambda row: signals.badRsiSignal(row), axis=1
                 )
+
+                # Desplazando los valores de cada columna especificada una posición adelante
+                # No trabajamos con los datos del mismo día pues técnicamente no los tenemos, tenemos los del día anterior
+                df["betaSignal"] = df["betaSignal"].shift(1)
+                df["200smaSignal"] = df["200smaSignal"].shift(1)
+                df["50smaSignal"] = df["50smaSignal"].shift(1)
+                df["reportSignal"] = df["reportSignal"].shift(1)
+                df["minimunSignal"] = df["minimunSignal"].shift(1)
+                df["rsiSignal"] = df["rsiSignal"].shift(1)
+                df["badRsiSignal"] = df["badRsiSignal"].shift(1)
 
                 if df.iloc[-1]["minimunSignal"]:
                     buy_signals[stock] = [

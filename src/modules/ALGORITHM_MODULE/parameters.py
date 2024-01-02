@@ -35,6 +35,19 @@ class parameters:
 
         return data
 
+    @staticmethod
+    def matchDates(data, spx):
+        """
+        Esta función elimina los datos que no se encuentran en las fechas
+        especificadas
+        """
+
+        # Si al fecha de spx es mayor
+        if spx.iloc[0]["date"] > data.iloc[0]["date"]:
+            return data[(data["date"] >= spx.iloc[0]["date"])]
+        else:
+            return data
+
     #########################################################
     ######################  SMA  ############################
     #########################################################
@@ -69,37 +82,39 @@ class parameters:
     ######################  BETA  ############################
     ##########################################################
 
-    def beta(symbol, limit):
+    def beta(stock, spx, testing=False):
         """
         Calcula el beta de un activo con respecto al SPX siempre
         con el intervalo de 1 día.
         """
-        conn = MongoDbFunctions(
-            DATABASE["host"],
-            DATABASE["port"],
-            DATABASE["username"],
-            DATABASE["password"],
-            DATABASE["dbname"],
-            "CoreData",
+        # Determinar la fecha inicial basada en si estamos en modo de prueba o no
+        date = pd.Timestamp(TESTING_DATE if testing else NORMAL_DATE)
+
+        # Sumar 5 años a la fecha 'date'
+        fecha_menos_cinco_anios = date - pd.DateOffset(years=5)
+
+        # Obtener la primera fecha del dataframe stock
+        first_date_in_stock = stock.iloc[0]["date"]
+
+        if first_date_in_stock > fecha_menos_cinco_anios:
+            # La fecha tope es la primera fecha + 5 años
+            date = first_date_in_stock + pd.DateOffset(years=5)
+
+        # Aplicar la función solo a las filas filtradas
+        stock["beta"] = stock.apply(
+            parameters.all_betas, args=(date, spx, stock), axis=1
         )
-        data = conn.findByMultipleFields(
-            fields={"symbol": symbol, "interval": "1day"}, custom=True
-        )
 
-        spx = conn.findByMultipleFields(
-            fields={"symbol": "SPX", "interval": "1day"}, custom=True
-        )
-        spx = parameters.formatData(spx)
-        data = parameters.formatData(data)
-        beta = data[(data["date"] >= f"{limit}-01-01")].copy()
+    def all_betas(row, date, spx, data):
+        if row["date"] < date:
+            return np.nan
 
-        beta["beta"] = beta.apply(parameters.all_betas, args=(spx, data), axis=1)
-
-        return beta
-
-    def all_betas(row, spx, data):
         data = data.copy()
         spx = spx.copy()
+
+        # Asegúrate de que ambos DataFrames tienen suficientes datos
+        if data.empty or spx.empty or data.shape[0] < 2 or spx.shape[0] < 2:
+            return 0
 
         fecha_maxima = row["date"]
 
@@ -115,18 +130,29 @@ class parameters:
         data = data[(data["date"] >= fecha_minima) & (data["date"] <= fecha_maxima)]
         spx = spx[(spx["date"] >= fecha_minima) & (spx["date"] <= fecha_maxima)]
 
+        # Acotamos los dataframes a las fechas más antiguas entras las dos últimas
+        spx_last_date = spx.iloc[0]["date"]
+        data_last_date = data.iloc[0]["date"]
+
+        if data_last_date > spx_last_date:
+            spx = spx[(spx["date"] >= data_last_date)]
+        elif spx_last_date > data_last_date:
+            data = data[(data["date"] >= spx_last_date)]
+
         data["Retorno"] = data["close"].pct_change()
         spx["Retorno"] = spx["close"].pct_change()
 
+        # Asegúrate de que la varianza del mercado no sea cero
+
         covarianza = data["Retorno"].cov(spx["Retorno"])
         varianza_mercado = spx["Retorno"].var()
+        if varianza_mercado == 0:
+            return 0
         beta = covarianza / varianza_mercado
 
         return beta
 
     def apply_beta(data, betas):
-    
-
         # Luego resta un día para obtener el día anterior
         data["date_normalized"] = data["date"].dt.normalize() - pd.Timedelta(days=1)
 
@@ -139,11 +165,9 @@ class parameters:
             right_on="date",
             direction="backward",
         )
-        merged_data.set_index('date_x', inplace=True)
+        merged_data.set_index("date_x", inplace=True)
         # Crear la nueva columna 'beta' en 'data' con los valores correspondientes
         data["beta"] = merged_data["beta"]
-
-
 
     ##############################################################
     ######################  Earnings  ############################
@@ -160,22 +184,7 @@ class parameters:
             parameters.privateAsignPresentationDate, args=(dates,), axis=1
         )
 
-    def asignMovement(symbol, df):
-        conn = MongoDbFunctions(
-            DATABASE["host"],
-            DATABASE["port"],
-            DATABASE["username"],
-            DATABASE["password"],
-            DATABASE["dbname"],
-            "CoreData",
-        )
-
-        data = conn.findByMultipleFields(
-            fields={"symbol": symbol, "interval": "1day"}, custom=True
-        )
-
-        data = parameters.formatData(data)
-
+    def asignMovement(symbol, data):
         dates = parameters.getReportDates(symbol)
         results = {}
         for date in dates:
@@ -189,9 +198,9 @@ class parameters:
                 ]
             else:
                 # Opcionalmente, puedes asignar un valor por defecto si la fecha no está presente
-                results[date] = 0
+                results[date] = np.nan
 
-        df["reportPriceMovement"] = df["lastReport"].map(results)
+        data["reportPriceMovement"] = data["lastReport"].map(results)
 
     ##### SUPORT FUNCTIONS FOR EARNING #####
 
@@ -209,7 +218,7 @@ class parameters:
             if date < reference_datetime:
                 return date_str
 
-        return None
+        return np.nan
 
     def getReportDates(symbol):
         """
@@ -268,20 +277,3 @@ class parameters:
 
         return adjusted_dates
 
-    #############################################################
-    ########################  EPS  ##############################
-    #############################################################
-
-    
-
-    #############################################################
-    ########################  PER  ##############################
-    #############################################################
-
-    
-
-    #############################################################
-    #######################  MOMENTUM  ##########################
-    #############################################################
-
-    
